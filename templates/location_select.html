@@ -1,0 +1,28 @@
+<select class="selection-input">
+    {% for location in locations %}
+        {% if user_data_representation.data_representation.time_type == "N" and location.date_of_activation < now and location.date_of_expiry > now %}
+            <option value="{{ location.id }}"
+                    {% if location == selected_location %}
+                    selected
+                    {% endif %}>
+                {{ location.name }}
+            </option>
+        {% elif user_data_representation.data_representation.time_type == "T" and location.date_of_activation < user_data_representation.time and location.date_of_expiry > user_data_representation.time %}
+            <option value="{{ location.id }}"
+                    {% if location == selected_location %}
+                    selected
+                    {% endif %}>
+                {{ location.name }}
+            </option>
+        {% elif user_data_representation.data_representation.time_type == "P" %}
+            {% if location.date_of_activation < user_data_representation.end_time and location.date_of_activation > user_data_representation.time or location.date_of_expiry > user_data_representation.time and location.date_of_expiry < user_data_representation.end_time %}
+                <option value="{{ location.id }}"
+                        {% if location == selected_location %}
+                        selected
+                        {% endif %}>
+                    {{ location.name }}
+                </option>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+</select>

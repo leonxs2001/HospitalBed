@@ -1,0 +1,471 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HospitalBed Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+{% csrf_token %}
+<!--template div-->
+<div id="template-div" hidden>
+    <!-- content-view template -->
+    <div id="content-view-template" draggable="true" data-location="" data-theme="" data-time="" data-order=""
+         data-id="" hidden>
+        <div class="delete-div">
+            <img class="delete-image" src="/static/images/cross-close.svg">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="/static/images/download.svg">
+            <h2 class="content-view-heading">
+            </h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+            </div>
+            <div class="time-input-div">
+            </div>
+        </div>
+        <div class="content-view-data-div"></div>
+    </div>
+
+    <!-- time-span template -->
+    <span id="time-input-span-template" class="time-input-span">Zeitpunkt:
+            <input class="time-input" type="datetime-local" value="">
+    </span>
+
+    <!-- from-, to- time templates -->
+    <span id="from-input-span-template" class="time-input-span">Von:
+        <input class="from-input" type="datetime-local" value="">
+    </span>
+    <span id="to-input-span-template" class="time-input-span">Bis:
+            <input class="to-input" type="datetime-local" value="">
+    </span>
+
+    <!-- location select template -->
+    <select class="selection-input">
+    </select>
+</div>
+
+<div id="head-div">
+    <div id="user-div">
+        <p id="user-text">
+            <span id="user-span">Benutzer:</span>
+            {{ user.name }}
+        </p>
+        <a href="/logout"><img id="log-out-image" src="{% static 'images/right-from-bracket-solid.svg' %}"></a>
+    </div>
+</div>
+
+<!-- Dropdown Part -->
+<ul id="add-ul">
+
+    <li class="parent">
+        <span id="add-span">
+            <span id="add-text-span">Hinzufügen</span>
+            <img id="add-image" src="{% static 'images/plus-solid.svg' %}">
+        </span>
+
+        <ul class="child">
+            {% for location_type, location_dict in structured_data_representations.items %}
+                <li class="selection parent">
+                    {% if location_type == "D" %}
+                        Fachabteilung
+                    {% elif location_type == "W" %}
+                        Station
+                    {% elif location_type == "R" %}
+                        Zimmer
+                    {% elif location_type == "H" %}
+                        Krankenhaus
+                    {% endif %}
+                    <span class="expand">»</span>
+                    <ul class="child">
+                        {% for theme_type, theme_set in location_dict.items %}
+                            <li class="selection parent">
+                                {% if theme_type == "I" %}
+                                    Informationen
+                                {% elif theme_type == "D" %}
+                                    Auslastung der Fachabteilungen
+                                {% elif theme_type == "W" %}
+                                    Auslastung der Stationen
+                                {% elif theme_type == "R" %}
+                                    Auslastung der Zimmer
+                                {% elif theme_type == "B" %}
+                                    Auslastung der Betten
+                                {% elif theme_type == "H" %}
+                                    Verlauf
+                                {% endif %}
+                                <span class="expand">»</span>
+                                <ul class="child">
+                                    {% for data_representation in theme_set %}
+                                        <li class="selection time"
+                                            data-location="{{ data_representation.location_type }}"
+                                            data-theme="{{ data_representation.theme_type }}"
+                                            data-time="{{ data_representation.time_type }}">
+                                            {% if data_representation.time_type == "N" %}
+                                                Neartime
+                                            {% elif data_representation.time_type == "T" %}
+                                                Zeitpunkt
+                                            {% elif data_representation.time_type == "P" %}
+                                                Zeitspanne
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </li>
+</ul>
+<data id="drag-data" value="-1"></data>
+<!-- main part -->
+<div id="content-div">
+    {% for user_data_representation in user_data_representations %}
+        <div class="content-view" draggable="true"
+             data-location="{{ user_data_representation.data_representation.location_type }}"
+             data-theme="{{ user_data_representation.data_representation.theme_type }}"
+             data-time="{{ user_data_representation.data_representation.time_type }}"
+             data-order="{{ user_data_representation.order }}"
+             data-id="{{ user_data_representation.id }}">
+            <div class="delete-div">
+                <img class="delete-image" src="{% static 'images/cross-close.svg' %}">
+            </div>
+            <div class="content-view-head">
+                <img class="download-image" src="{% static 'images/download.svg' %}">
+                <h2 class="content-view-heading">
+                    <!--filled by js-->
+                </h2>
+            </div>
+            <div class="content-view-input-div">
+                <div class="location-input-div">
+                    {% if user_data_representation.data_representation.location_type == "D" %}
+                        {% include 'location_select.html' with locations=departments user_data_representation=user_data_representation now=now selected_location=user_data_representation.department %}
+                    {% elif user_data_representation.data_representation.location_type == "W" %}
+                        {% include 'location_select.html' with locations=wards user_data_representation=user_data_representation now=now selected_location=user_data_representation.ward %}
+                    {% elif user_data_representation.data_representation.location_type == "R" %}
+                        {% include 'location_select.html' with locations=rooms user_data_representation=user_data_representation now=now selected_location=user_data_representation.room %}
+                    {% endif %}
+                </div>
+                <div class="time-input-div">
+                    {% if user_data_representation.data_representation.time_type == "T" %}
+                        <span class="time-input-span">Zeitpunkt:
+                            <input class="time-input" type="datetime-local"
+                                   value="{{ user_data_representation.formatted_time }}">
+                        </span>
+                    {% endif %}
+                    {% if user_data_representation.data_representation.time_type == "P" %}
+                        <span class="time-input-span">Von:
+                            <input class="from-input" type="datetime-local"
+                                   value="{{ user_data_representation.formatted_time }}">
+                        </span>
+                        <span class="time-input-span">Bis:
+                            <input class="to-input" type="datetime-local"
+                                   value="{{ user_data_representation.formatted_end_time }}">
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="content-view-data-div"></div>
+        </div>
+    {% endfor %}
+    <!--
+    <div class="content-view"
+         data-location="H" data-theme="I" data-time="N">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Informationen</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+            </div>
+            <div class="time-input-div"></div>
+        </div>
+        <div class="content-view-data-div"></div>
+    </div>
+    <div class="content-view"
+         data-location="H" data-theme="I" data-time="P">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Informationen</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+
+            </div>
+            <div class="time-input-div">
+                <span class="time-input-span">Von:
+                    <input class="from-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+                <span class="time-input-span">Bis:
+                    <input class="to-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+            </div>
+        </div>
+        <div class="content-view-data-div">
+            <canvas class="occupancy-chart-canvas" id="myChart"></canvas>
+        </div>
+    </div>
+    <div class="content-view"
+         data-location="H" data-theme="I" data-time="T">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Informationen</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+
+            </div>
+            <div class="time-input-div">
+                <span class="time-input-span">Zeitpunkt:
+                    <input class="time-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+            </div>
+        </div>
+        <div class="content-view-data-div"></div>
+    </div>
+    <div class="content-view"
+         data-location="D" data-theme="W" data-time="T">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Stationen der Fachabteilung</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+                Fachabteilung:
+                <select class="selection-input" onchange="onInputChange(this)">
+                    <option>Fachabteilung1</option>
+                    <option>Fachabteilung2</option>
+                    <option>Fachabteilung3</option>
+                </select>
+            </div>
+            <div class="time-input-div">
+                <span class="time-input-span">Zeitpunkt:
+                    <input class="time-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+            </div>
+        </div>
+        <div class="content-view-data-div">
+
+        </div>
+    </div>
+    <div class="content-view"
+         data-location="D" data-theme="W" data-time="P">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Stationen der Fachabteilung</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+                Fachabteilung:
+                <select class="selection-input" onchange="onInputChange(this)">
+                    <option value="1">Fachabteilung1</option>
+                    <option>Fachabteilung2</option>
+                    <option>Fachabteilung3</option>
+                </select>
+            </div>
+            <div class="time-input-div">
+                <span class="time-input-span">Von:
+                    <input class="from-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+                <span class="time-input-span">Bis:
+                    <input class="to-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+            </div>
+        </div>
+        <div class="content-view-data-div">
+            <div class="location-list-head-div">
+                <h4 class="location-name-head">Station</h4>
+                <h4 class="location-occupancy-head">Auslastung</h4>
+                <div class="location-legend">
+                    <span class="occupied-rectangle"></span>
+                    <span class="occupied-text">Belegt</span>
+                    <span class="empty-rectangle"></span>
+                    <span>Leer</span>
+                </div>
+            </div>
+            <div class="location-list-div">
+                <div class="location-div">
+                    <span class="location-name-span">Station1</span>
+                    <span class="location-occupancy-span">10/20</span>
+                    <canvas class="location-occupancy-chart-canvas" width="1800" height="10" id="myChart2"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-view"
+         data-location="R" data-theme="B" data-time="P">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Betten des Zimmers</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+                Fachabteilung:
+                <select class="selection-input" onchange="onInputChange(this)">
+                    <option value="1">Fachabteilung1</option>
+                    <option>Fachabteilung2</option>
+                    <option>Fachabteilung3</option>
+                </select>
+            </div>
+            <div class="time-input-div">
+                <span class="time-input-span">Von:
+                    <input class="from-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+                <span class="time-input-span">Bis:
+                    <input class="to-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+            </div>
+        </div>
+        <div class="content-view-data-div">
+            <div class="location-list-head-div">
+                <h4 class="bed-name-head">Bett</h4>
+                <h4 class="bed-age-head">&#216;Alter</h4>
+                <h4 class="bed-sex-head">Geschlecht</h4>
+            </div>
+            <div class="location-list-div">
+                <div class="location-div">
+                    <span class="bed-name-span">Bett1</span>
+                    <span class="bed-age-span">10.5</span>
+                    <span class="bed-sex-span">
+                        <span class="male-rectangle"></span>
+                        Männlich
+                    </span>
+                </div>
+                <div class="location-div">
+                    <span class="bed-name-span">Bett1</span>
+                    <span class="bed-age-span">10.5</span>
+                    <span class="bed-sex-span">
+                        <span class="female-rectangle"></span>
+                        Weiblich
+                    </span>
+                </div>
+                <div class="location-div">
+                    <span class="bed-name-span">Bett1</span>
+                    <span class="bed-age-span">10.5</span>
+                    <span class="bed-sex-span">
+                        <span class="diverse-rectangle"></span>
+                        Divers
+                    </span>
+                </div>
+                <div class="location-div">
+                    <span class="bed-name-span">Bett1</span>
+                    <span class="bed-age-span">10.5</span>
+                    <span class="bed-sex-span">
+                        <span class="empty-rectangle"></span>
+                        Leer
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="content-view"
+         data-location="R" data-theme="I" data-time="T">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Informationen</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+
+            </div>
+            <div class="time-input-div">
+                    <span class="time-input-span">Zeitpunkt:
+                        <input class="time-input" onchange="onInputChange(this)" type="datetime-local">
+                    </span>
+            </div>
+        </div>
+        <div class="content-view-data-div">
+            <div class="room-data-div">
+                <span class="room-age-span">
+                    <h4>Durchschnittliches Alter: </h4>
+                    <h4 class="room-age-h4">10</h4>
+                </span>
+                <span class="room-sex-span">
+                    <h4>Geschlecht: </h4>
+                    <h4 class="room-sex-h4">
+                        <span class="male-rectangle"></span>
+                        Männlich
+                    </h4>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="content-view"
+         data-location="D" data-theme="H" data-time="P">
+        <div class="delete-div">
+            <img class="delete-image" src="{% static 'images/cross-close.svg' %}"
+                 onclick="onDeletionOfView(this)">
+        </div>
+        <div class="content-view-head">
+            <img class="download-image" src="{% static 'images/download.svg' %}"
+                 onclick="onDownloadDataForView(this)">
+            <h2 class="content-view-heading">Verlauf der Fachabteilung</h2>
+        </div>
+        <div class="content-view-input-div">
+            <div class="location-input-div">
+                Fachabteilung:
+                <select class="selection-input" onchange="onInputChange(this)">
+                    <option value="1">Fachabteilung1</option>
+                    <option>Fachabteilung2</option>
+                    <option>Fachabteilung3</option>
+                </select>
+            </div>
+            <div class="time-input-div">
+                <span class="time-input-span">Von:
+                    <input class="from-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+                <span class="time-input-span">Bis:
+                    <input class="to-input" onchange="onInputChange(this)" type="datetime-local">
+                </span>
+            </div>
+        </div>
+        <div class="content-view-data-div">
+            <canvas class="occupancy-history-chart-canvas" id="myChart3"></canvas>
+        </div>
+    </div>-->
+
+<script src="{% static 'js/script.js' %}"></script>
+</div>
+</body>
+</html>

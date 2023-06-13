@@ -2,8 +2,11 @@ from pyrfc import Connection, ABAPApplicationError, ABAPRuntimeError, LogonError
 from configparser import ConfigParser
 from pprint import PrettyPrinter
 
+# host name of a specific SAP application server
 ASHOST = 'sapxxxxx'
+#  a self-contained commercial, organizational, and technical unit within an SAP System
 CLIENT = 'x00'
+# a two-digit number between 00 to 99. SAP instances are numbered because system can contain more than once instance at a specific point of time.
 SYSNR = '00'
 USER = 'XXXXXXXX'
 PASSWD = 'XXXXXXXX'
@@ -16,9 +19,7 @@ try:
     rowskips = 0
     while True:
         print("----Begin of Batch---")
-        result = conn.call('RFC_READ_TABLE', \
-                           QUERY_TABLE='TCURR', \
-                           OPTIONS=options, \
+        result = conn.call('RFC_READ_TABLE', QUERY_TABLE='TCURR', OPTIONS=options,
                            ROWSKIPS=rowskips, ROWCOUNT=ROWS_AT_A_TIME)
         pp.pprint(result['DATA'])
 

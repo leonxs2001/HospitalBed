@@ -1,0 +1,445 @@
+/*dropdown part*/
+.child, #add-ul {
+    list-style: none;
+    margin: 0;
+    padding: 0px;
+    min-width: 10em;
+}
+
+#add-ul {
+    height: 4vh;
+    background: #ffffffea;
+    border-radius: 10px;
+    box-shadow: 0.2vw 0.2vh 0.5em grey;
+    width: fit-content;
+    margin-left: 1vw;
+    display: flex;
+    align-content: center;
+    flex-wrap: wrap;
+    padding-left: 0.5em;
+}
+
+#add-image {
+    height: 2.3vh;
+    margin-right: 1vw;
+}
+
+#add-span {
+    display: flex;
+    justify-content: space-between;
+}
+
+#add-text-span {
+    margin: auto 0;
+}
+
+.parent {
+    display: block;
+    position: relative;
+    float: left;
+    width: 100%;
+}
+
+.parent:hover > .child {
+    display: block;
+    position: absolute;
+}
+
+.child {
+    display: none;
+
+}
+
+.child .selection {
+    background: #ffffffea;
+    line-height: 30px;
+    border-bottom: #CCC 1px solid;
+    border-right: #CCC 1px solid;
+    width: 150%;
+    padding-left: 0.5em;
+}
+
+#add-ul .child .child {
+    left: 100%;
+    top: 0;
+}
+
+.selection:hover {
+    background-color: #95B4CA;
+}
+
+.parent .selection:hover {
+    background-color: #F0F0F0;
+}
+
+.expand {
+    font-size: 12px;
+    float: right;
+    margin-right: 5px;
+}
+
+/*main part*/
+body {
+    height: 100%;
+    background: #58d0f580;
+    margin: 3vh 4vw 4vh 4vw;
+}
+
+#head-div {
+    display: flex;
+    width: 92vw;
+    height: 5vh;
+    justify-content: flex-end;
+}
+
+#user-div {
+    background: #ffffffea;
+    width: 33%;
+    padding: 0 1em;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 520;
+    box-shadow: 0.2vw 0.2vh 0.5em grey;
+}
+
+#user-span{
+    font-weight: bold;
+}
+
+#log-out-image {
+    margin: 1vh 0;
+    height: 3vh;
+}
+
+#log-out-image:hover {
+    transform: scale(1.1);
+}
+
+#user-text {
+    margin: auto 0;
+}
+
+#content-div {
+    margin-top: 3vh;
+    width: 92vw;
+    height: 80vh;
+    padding-top: 1vh;
+    overflow: auto;
+    border-radius: 30px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.content-view {
+    background: #ffffffea;
+    border-radius: 30px;
+    width: 48%;
+    height: 37vh;
+    box-shadow: 0.2vw 0.2vh 0.5em grey;
+    margin: 0 1% 3vh 1%;
+    display: flex;
+    flex-direction: column;
+}
+
+.dragged-content-view{
+    background: #e6e6e6ea;
+}
+
+.delete-div {
+    height: 8%;
+    width: 98%;
+    display: flex;
+    justify-content: flex-end;
+    align-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.delete-image {
+    height: 50%;
+    border-radius: 100%;
+    border: solid black 1px;
+    padding: 2px;
+}
+
+.delete-image:hover {
+    transform: scale(1.1);
+}
+
+.content-view-head {
+    width: 96%;
+    height: 10%;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    flex-wrap: wrap;
+    padding: 0 2%;
+}
+
+.download-image {
+    height: 80%;
+}
+
+.download-image:hover {
+    transform: scale(1.1);
+}
+
+.content-view-heading {
+    margin: auto;
+    display: flex;
+}
+
+.content-view-input-div {
+    width: 96%;
+    height: fit-content;
+    padding: 1% 2%;
+    display: flex;
+    align-content: center;
+    flex-direction: row;
+}
+
+.location-input-div {
+    width: 50%;
+}
+
+.time-input-div {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+}
+
+.time-input-span {
+    display: flex;
+    justify-content: space-between;
+}
+
+.content-view-data-div {
+    width: 100%;
+    height: auto;
+    flex-grow: 1;
+}
+
+.occupancy-chart-canvas {
+    height: 30vh !important;
+    width: auto !important;
+    position: relative;
+    top: -4vh;
+    margin: 0 auto;
+}
+
+.location-list-div {
+    margin: 0 10% 3vh 10%;
+    width: 78%;
+    height: 16vh;
+    overflow: auto;
+    padding: 1vh 1% 1vh 1%;
+    background-color: #f4f4f4f0;
+}
+
+.location-div{
+    width: 100%;
+    display: flex;
+    align-content: center;
+}
+
+.location-name-span{
+    width: 20%;
+    font-size: 1em;
+    width: 20%;
+    margin: auto 0;
+}
+
+.location-occupancy-span{
+    width: 20%;
+    font-size: 1em;
+    width: 20%;
+    margin: auto 0;
+}
+
+.location-occupancy-chart-canvas{
+    width: 60% !important;
+    height: 1.8vh !important;
+    margin: 0.1vh 0;
+}
+
+.location-list-head-div{
+    width: 80%;
+    display: flex;
+    flex-direction: row;
+    margin: 1vh 10% 0.5vh 10%;
+}
+
+.location-name-head{
+    width: 18%;
+    padding-left: 1%;
+    margin: 0 1% 0 0;
+    background-color: #f0f0f0;
+}
+
+.location-occupancy-head{
+    background-color: #f0f0f0;
+    width: 20%;
+    margin: 0;
+}
+
+.location-legend{
+    background-color: #f0f0f0;
+    width: 60%;
+}
+
+.occupied-rectangle{
+    background: green;
+    color: green;
+}
+
+.occupied-text{
+    margin-right: 2%;
+}
+
+.empty-rectangle{
+    background: grey;
+    color: grey;
+}
+
+.bed-name-head{
+    background-color: #f0f0f0;
+    width: 31%;
+    padding-left: 1%;
+    margin: 0 1% 0 0;
+}
+
+.bed-age-head{
+    background-color: #f0f0f0;
+    width: 32%;
+    margin: 0 1% 0 0;
+}
+
+.bed-sex-head{
+    background-color: #f0f0f0;
+    width: 34%;
+    margin: 0;
+}
+
+.bed-name-span, .bed-age-span{
+    width: 33%;
+}
+
+.bed-sex-span{
+    width: 34%;
+}
+
+.male-rectangle{
+    background: blue;
+    color: blue;
+}
+
+.female-rectangle{
+    background: orange;
+    color: orange;
+}
+
+.diverse-rectangle{
+    background: green;
+    color: green;
+}
+
+.room-age-span, .room-sex-span{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.room-age-h4, .room-sex-h4{
+    width: 40%;
+}
+
+.room-data-div{
+    width: 70%;
+    margin: 5% auto;
+}
+
+.occupancy-history-chart-canvas{
+    height: 22vh !important;
+    width: auto !important;
+    margin: 0 auto;
+}
+
+@media only screen and (min-width: 1650px) {
+    .content-view {
+        width: calc((100% / 3) - 2%);
+    }
+
+    #user-div {
+        font-size: 1.1em;
+    }
+}
+
+@media all and (max-width: 1000px) {
+    /* CSS that should be displayed if width is equal to or less than 991px and larger
+     than 768px goes here */
+    .content-view {
+        width: 98%;
+    }
+
+    #user-div {
+        font-size: 0.9em;
+    }
+}
+
+@media (orientation: portrait) {
+
+    .delete-image {
+        height: 60%;
+    }
+
+    .delete-div {
+        height: 10%;
+    }
+
+    .download-image {
+        height: 100%;
+    }
+
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+
+    .occupancy-chart-canvas {
+        height: 27vh !important;
+        width: auto !important;
+        top: -1vh;
+    }
+
+    .room-data-div{
+        margin-top: 25%;
+    }
+
+    .occupancy-history-chart-canvas{
+        height: 18vh !important;
+        margin-top: 8%;
+    }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+
+    .content-view{
+        height: 77vh;
+    }
+
+    .location-list-div{
+        height: 32vh;
+    }
+
+    .occupancy-chart-canvas{
+        height: 60vh !important;
+        top: -9vh;
+    }
+
+    .location-occupancy-chart-canvas{
+        height: 3vh !important;
+    }
+
+    .occupancy-history-chart-canvas{
+        height: 50vh !important;
+    }
+}

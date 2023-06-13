@@ -16,11 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import TemplateView
 
-from dashboard.views import test, test2
+from dashboard.views import DashboardView, create_data_representation, UpdateOrderView, DeleteUserDataRepresentation, \
+    CreateUserDataRepresentationView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('test', test),
-    path('test2', test2)
+    path('', DashboardView.as_view()),
+    path("test/", TemplateView.as_view(template_name="test.html")),
+    path("update/order", UpdateOrderView.as_view()),
+    path("delete/user-data-representation", DeleteUserDataRepresentation.as_view()),
+    path("create/user-data_representation", CreateUserDataRepresentationView.as_view()),
+    path("create/", create_data_representation)
 ]

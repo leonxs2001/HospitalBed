@@ -9,8 +9,7 @@ import datetime
 from django.db.models import QuerySet
 
 from dashboard.models import Patient, Visit, Department, Ward, Room, Bed, Stay, Discharge
-
-HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/hl7_nachrichten"
+from django.conf import settings
 
 HL7_DATE_FORMAT = "%Y%m%d"
 HL7_DATE_TIME_FORMAT = "%Y%m%d%H%M%S"
@@ -40,7 +39,7 @@ ZBE_START_DATE_FIELD = 2
 def parse_all_hl7_messages():
     # get all hl7 messages from the hl7_files
     hl7_messages = []
-    for filename in os.listdir(HL7_DIRECTORY):
+    for filename in os.listdir(settings.HL7_DIRECTORY):
         if filename[-4:] == ".hl7":
             new_hl7_messages = get_hl7_message_from_file(filename)
             # insert to the right position in the list (sorted)
@@ -54,7 +53,7 @@ def parse_all_hl7_messages():
 
 def get_hl7_message_from_file(filename: str):
     hl7_messages = []
-    with open(HL7_DIRECTORY + "/" + filename, "r") as hl7_file:
+    with open(settings.HL7_DIRECTORY + "/" + filename, "r") as hl7_file:
         # read the string from the file
         hl7_messages_string = hl7_file.read()
 
@@ -85,7 +84,7 @@ def parse_hl7_message(hl7_message: hl7.Message):
                                               component_num=MESSAGE_TYPE_TRIGGER_EVENT_COMPONENT)
 
     if message_type == "ADT":
-        if trigger_event == "A01": # TODO brauche ich A06?
+        if trigger_event == "A01":
             parse_new_visit(pid_segment, pv1_segment, zbe_segment)
         elif trigger_event == "A02":
             parse_transfer(pv1_segment, pid_segment, zbe_segment)
@@ -109,6 +108,7 @@ def parse_cancel_discharge(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
     visit_id_string = pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
     visit_id = int(visit_id_string)
 
+    # TODO angucken select_related --> keine doppelte abfrage
     # get and delete discharge if exists
     discharge = Discharge.objects.filter(movement_id=movement_id, stay__visit_id=visit_id).last()
     if discharge:
