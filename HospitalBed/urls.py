@@ -18,15 +18,20 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from dashboard.views import DashboardView, create_data_representation, UpdateOrderView, DeleteUserDataRepresentation, \
+from dashboard.views.edit_user_data_views import UpdateOrderView, DeleteUserDataRepresentation, \
     CreateUserDataRepresentationView
+from dashboard.views.location_data_views import AllocationView
+from dashboard.views.main_views import DashboardView, create_data_representation
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
     path('', DashboardView.as_view()),
-    path("test/", TemplateView.as_view(template_name="test.html")),
+
     path("update/order", UpdateOrderView.as_view()),
     path("delete/user-data-representation", DeleteUserDataRepresentation.as_view()),
     path("create/user-data_representation", CreateUserDataRepresentationView.as_view()),
-    path("create/", create_data_representation)
+    path("create/", create_data_representation),
+
+    path("get_data/<str:location_type>/<str:theme_type>/<str:time_type>/", AllocationView.as_view())
 ]

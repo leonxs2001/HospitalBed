@@ -20,6 +20,7 @@
         <div class="content-view-head">
             <img class="download-image" src="/static/images/download.svg">
             <h2 class="content-view-heading">
+                <!--Heaading-->
             </h2>
         </div>
         <div class="content-view-input-div">
@@ -32,21 +33,86 @@
     </div>
 
     <!-- time-span template -->
-    <span id="time-input-span-template" class="time-input-span">Zeitpunkt:
+    <span class="time-input-span time-template">Zeitpunkt:
             <input class="time-input" type="datetime-local" value="">
     </span>
 
     <!-- from-, to- time templates -->
-    <span id="from-input-span-template" class="time-input-span">Von:
+    <span class="time-input-span from-template">Von:
         <input class="from-input" type="datetime-local" value="">
     </span>
-    <span id="to-input-span-template" class="time-input-span">Bis:
+    <span class="time-input-span to-template">Bis:
             <input class="to-input" type="datetime-local" value="">
     </span>
 
     <!-- location select template -->
     <select class="selection-input">
+        <!--All location options-->
     </select>
+
+    <!-- occupancy chart canvas -->
+    <canvas class="information-chart-canvas data-holder" hidden></canvas>
+
+    <!-- location-div and location-head-div templates for rooms, wards and departments-->
+    <div class="location-list-head-div location-template">
+        <h4 class="location-name-head"><!--Name of location (Station, Fachabteilung or Room)--></h4>
+        <h4 class="location-occupancy-head">Auslastung</h4>
+        <div class="location-legend">
+            <span class="occupied-rectangle"></span>
+            <span class="occupied-text">Belegt</span>
+            <span class="empty-rectangle"></span>
+            <span>Leer</span>
+        </div>
+    </div>
+    <div class="location-list-div location-template">
+        <!--location divs-->
+    </div>
+
+    <div class="location-div location-template">
+        <span class="location-name-span"><!--Name--></span>
+        <span class="location-occupancy-span"><!--Occupancy number/max--></span>
+        <canvas class="location-information-chart-canvas" width="1800" height="10"/>
+    </div>
+
+    <!-- location-list-div and location-list-head-div templates for beds-->
+    <div class="location-list-head-div bed-template">
+        <h4 class="bed-name-head">Bett</h4>
+        <h4 class="bed-age-head">&#216;Alter</h4>
+        <h4 class="bed-sex-head">Geschlecht</h4>
+    </div>
+    <div class="location-list-div bed-template">
+    </div>
+
+    <div class="location-div bed-template">
+        <span class="bed-name-span"><!-- name of bed --></span>
+        <span class="bed-age-span"><!-- average age --></span>
+        <span class="bed-sex-span">
+            <!-- input right gender class (male-rectangle, female-rectangle, diverse-rectangle, empty-rectangle) -->
+            <span class="gender-rectangle"></span>
+        </span>
+    </div>
+
+    <!-- occupancy history chart canvas template -->
+    <canvas class="occupancy-history-chart-canvas data-holder" hidden></canvas>
+
+    <!-- room information template -->
+    <div class="room-data-div data-holder" hidden>
+        <span class="room-age-span">
+            <h4>Durchschnittliches Alter:</h4>
+            <h4 class="room-age-h4"></h4>
+        </span>
+        <span class="room-sex-span">
+            <h4>Geschlecht: </h4>
+            <h4 class="room-sex-h4">
+                <span class="sex-rectangle-span"></span>
+                <span class="sex-span"></span>
+                <!-- input the right gender + class for right color(male-rectangle, female-rectangle, diverse-rectangle, empty-rectangle)-->
+            </h4>
+        </span>
+    </div>
+
+    <!-- loader template -->
+    <div class="loader"></div>
 </div>
 
 <div id="head-div">
@@ -170,7 +236,9 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="content-view-data-div"></div>
+            <div class="content-view-data-div">
+                <!--filled by js-->
+            </div>
         </div>
     {% endfor %}
     <!--
@@ -465,7 +533,7 @@
         </div>
     </div>-->
 
-<script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/script.js' %}"></script>
 </div>
 </body>
 </html>

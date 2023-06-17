@@ -1,0 +1,207 @@
+import datetime
+from abc import ABC, abstractmethod
+
+from django.db import models
+from django.db.models import functions
+
+
+class SexAnnotationQuerySetMixin(models.QuerySet, ABC):
+    number_of_men = models.Count("stay", distinct=True,
+                                 filter=models.Q(stay__visit__patient__sex="M"))
+    number_of_women = models.Count("stay", distinct=True,
+                                   filter=models.Q(stay__visit__patient__sex="W"))
+    number_of_diverse = models.Count("stay", distinct=True,
+                                     filter=models.Q(stay__visit__patient__sex="D"))
+
+    def sex_annotation(self):
+        return self.annotate(number_of_diverse=self.number_of_diverse,
+                             number_of_men=self.number_of_men,
+                             number_of_women=self.number_of_women)
+
+    def sex_over_period_annotation(self, start: datetime.datetime, end: datetime.datetime):
+        pass  # TODO fill
+
+
+class AgeAnnotationQuerySetMixin(models.QuerySet, ABC):
+    def age_annotation(self):
+        today = datetime.date.today()
+
+        # Extract year, month, and day from the current date
+        current_year = today.year
+        current_month = today.month
+        current_day = today.day
+
+        age_in_years = current_year - models.F('stay__visit__patient__date_of_birth__year')
+
+        average_age = models.Avg(age_in_years - functions.Cast(
+            models.Q(stay__visit__patient__date_of_birth__month__lt=current_month) | models.Q(
+                stay__visit__patient__date_of_birth__month__lt=current_month) & models.Q(
+                stay__visit__patient__date_of_birth__day__lt=current_day),
+            output_field=models.IntegerField()))
+
+        return self.annotate(average_age=average_age)
+
+    def average_age_over_period_annotation(self, start: datetime, end: datetime):
+        pass  # TODO fill
+
+
+class LocationFilterQuerySetMixin(models.QuerySet, ABC):
+    def filter_for_id(self, ID: int):
+        return self.filter(id=ID)
+
+    def all(self):
+        return super(LocationFilterQuerySetMixin, self).all()
+
+    @abstractmethod
+    def all_from_department(self, department_id: int):
+        pass
+
+    @abstractmethod
+    def all_from_ward(self, ward_id: int):
+        pass
+
+    @abstractmethod
+    def all_from_room(self, room_id: int):
+        pass
+
+
+class LocationInformationQuerySetMixin(models.QuerySet, ABC):
+    def filter_for_time(self, time: datetime):
+        return self.filter(date_of_activation__lt=time, date_of_expiry__gt=time)
+
+    def filter_for_period(self, start: datetime, end: datetime):
+        self.filter(models.Q(date_of_activation__range=(start, end)) | models.Q(date_of_expiry__range=(start, end)))
+
+    def for_time(self, time: datetime.datetime):
+        return self.filter_for_time(time).get_information(time)
+
+    def for_period(self, start: datetime.datetime, end: datetime.datetime):
+        return self.filter_for_period(start, end).get_information_for_period(start, end)
+
+    @abstractmethod
+    def get_information(self, time: datetime.datetime):
+        pass
+
+    @abstractmethod
+    def get_information_for_period(self, start: datetime, end: datetime):
+        pass
+
+
+class DepartmentQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin, SexAnnotationQuerySetMixin):
+    def all_from_department(self, department_id: int):
+        return self.filter_for_id(department_id)
+
+    def all_from_ward(self, ward_id: int):
+        return self.filter(wards__id=ward_id)
+
+    def all_from_room(self, room_id: int):
+        return self.filter(wards__room__id=room_id)
+
+    def get_information(self, time: datetime.datetime):
+        query_set = self.sex_annotation()
+        number = models.Count('stay', distinct=True,
+                              filter=models.Q(stay__start_date__lt=time, stay__end_date__gt=time))
+        max_number = models.Count("wards__room__bed", distinct=True,
+                                  filter=models.Q(wards__room__bed__date_of_activation__lt=time,
+                                                  wards__room__bed__date_of_expiry__gt=time))
+
+        return query_set.annotate(number=number, max_number=max_number).annotate(
+            occupancy=functions.Round((models.F("number") / models.F("max_number")) * 100, 2))
+
+    def get_information_for_period(self, start: datetime, end: datetime):
+        pass  # TODO fill
+
+
+class WardQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin, SexAnnotationQuerySetMixin):
+
+    def all_from_department(self, department_id: int):
+        return self.filter(department__id=department_id)
+
+    def all_from_ward(self, ward_id: int):
+        return self.filter_for_id(ward_id)
+
+    def all_from_room(self, room_id: int):
+        return self.filter(room__id=room_id)
+
+    def get_information(self, time: datetime.datetime):
+        query_set = self.sex_annotation()
+        number = models.Count('stay', distinct=True,
+                              filter=models.Q(stay__start_date__lt=time, stay__end_date__gt=time))
+        max_number = models.Count("room__bed", distinct=True,
+                                  filter=models.Q(room__bed__date_of_activation__lt=time,
+                                                  room__bed__date_of_expiry__gt=time))
+
+        return query_set.annotate(number=number, max_number=max_number).annotate(
+            occupancy=functions.Round((models.F("number") / models.F("max_number")) * 100, 2))
+
+    def get_information_for_period(self, start: datetime, end: datetime):
+        pass  # TODO fill
+
+
+class RoomQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin, SexAnnotationQuerySetMixin,
+                   AgeAnnotationQuerySetMixin):
+
+    def all_from_department(self, department_id: int):
+        return self.filter(ward__department__id=department_id)
+
+    def all_from_ward(self, ward_id: int):
+        return self.filter(ward__id=ward_id)
+
+    def all_from_room(self, room_id: int):
+        return self.filter_for_id(room_id)
+
+    def get_information(self, time: datetime.datetime):
+        query_set = self.sex_annotation().age_annotation()
+        number = models.Count('stay', distinct=True,
+                              filter=models.Q(stay__start_date__lt=time, stay__end_date__gt=time))
+        max_number = models.Count("bed", distinct=True,
+                                  filter=models.Q(bed__date_of_activation__lt=time,
+                                                  bed__date_of_expiry__gt=time))
+
+        return query_set.annotate(number=number, max_number=max_number).annotate(
+            occupancy=functions.Round((models.F("number") / models.F("max_number")) * 100, 2))
+
+    def get_information_for_period(self, start: datetime, end: datetime):
+        pass  # TODO fill
+
+
+class BedQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin, SexAnnotationQuerySetMixin,
+                  AgeAnnotationQuerySetMixin):
+
+    def all_from_department(self, department_id: int):
+        return self.filter(room__ward__department__id=department_id)
+
+    def all_from_ward(self, ward_id: int):
+        return self.filter(room__ward__id=ward_id)
+
+    def all_from_room(self, room_id: int):
+        return self.filter(room__id=room_id)
+
+    def get_information(self, time: datetime.datetime):
+        return self.sex_annotation().age_annotation()
+
+    def get_information_for_period(self, start: datetime, end: datetime):
+        pass  # TODO fill
+
+
+class HospitalBedQuerySet(LocationInformationQuerySetMixin):
+    def all(self):
+        return super(HospitalBedQuerySet, self).all()
+
+    def get_information(self, time: datetime.datetime):
+        number = models.Count('stay', distinct=True,
+                              filter=models.Q(stay__start_date__lt=time, stay__end_date__gt=time))
+        max_number = models.Count("id")
+        occupancy = functions.Round((number/ max_number) * 100, 2)
+
+        query_set = self.aggregate(number_of_diverse=SexAnnotationQuerySetMixin.number_of_diverse,
+                                   number_of_men=SexAnnotationQuerySetMixin.number_of_men,
+                                   number_of_women=SexAnnotationQuerySetMixin.number_of_women,
+                                   number=number,
+                                   max_number=max_number,
+                                   occupancy=occupancy)
+
+        return query_set
+
+    def get_information_for_period(self, start: datetime, end: datetime):
+        pass  # TODO fill
