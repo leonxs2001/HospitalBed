@@ -8,7 +8,7 @@ import datetime
 # from dashboard.models import Patient
 from django.db.models import QuerySet
 
-from dashboard.models import Patient, Visit, Department, Ward, Room, Bed, Stay, Discharge
+from dashboard.models.hospital_models import hospital_models
 from django.conf import settings
 
 HL7_DATE_FORMAT = "%Y%m%d"
@@ -30,7 +30,6 @@ PV1_PATIENT_LOCATION_FIELD = 3
 PATIENT_LOCATION_WARD_COMPONENT = 1
 PATIENT_LOCATION_ROOM_COMPONENT = 2
 PATIENT_LOCATION_BED_COMPONENT = 3
-PATIENT_LOCATION_DEPARTMENT_COMPONENT = 4
 
 ZBE_MOVEMENT_ID_FIELD = 1
 ZBE_START_DATE_FIELD = 2
@@ -48,6 +47,7 @@ def parse_all_hl7_messages():
                               key=lambda msg: msg.segment("MSH")[MSH_MESSAGE_CREATION_FIELD])
 
     for hl7_message in hl7_messages:
+        print(hl7_message.segment("MSH"))
         parse_hl7_message(hl7_message)
 
 
@@ -110,7 +110,7 @@ def parse_cancel_discharge(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
 
     # TODO angucken select_related --> keine doppelte abfrage
     # get and delete discharge if exists
-    discharge = Discharge.objects.filter(movement_id=movement_id, stay__visit_id=visit_id).last()
+    discharge = hospital_models.Discharge.objects.filter(movement_id=movement_id, stay__visit_id=visit_id).last()
     if discharge:
         discharge.stay.end_date = None
         discharge.stay.save()
@@ -124,12 +124,12 @@ def parse_cancel_transfer(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
     visit_id = int(visit_id_string)
 
     # get and delete the canceled stay if exists
-    canceled_stay = Stay.objects.filter(visit_id=visit_id, movement_id=movement_id).last()
+    canceled_stay = hospital_models.Stay.objects.filter(visit_id=visit_id, movement_id=movement_id).last()
     if canceled_stay:
         canceled_stay.delete()
 
         # get the stay before and set the end date to None if exists
-        old_stay = Stay.objects.filter(visit_id=visit_id, movement_id__lt=movement_id).last()
+        old_stay = hospital_models.Stay.objects.filter(visit_id=visit_id, movement_id__lt=movement_id).last()
         if old_stay:
             old_stay.update(end_date=None)
 
@@ -141,7 +141,7 @@ def parse_cancel_admit(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
     visit_id = int(visit_id_string)
 
     # get and delete the canceled stay if exists
-    stay = Stay.objects.filter(visit_id=visit_id, movement_id=movement_id).last()
+    stay = hospital_models.Stay.objects.filter(visit_id=visit_id, movement_id=movement_id).last()
     if stay:
         stay.delete()
 
@@ -155,7 +155,7 @@ def parse_update_patient(pid_segment: hl7.Segment):
 
     sex = pid_segment.extract_field(field_num=PID_SEX_FILED)
 
-    Patient.objects.filter(patient_id=patient_id).update(date_of_birth=date_of_birth, sex=sex)
+    hospital_models.Patient.objects.filter(patient_id=patient_id).update(date_of_birth=date_of_birth, sex=sex)
 
 
 def parse_transfer(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe_segment: hl7.Segment):
@@ -166,7 +166,7 @@ def parse_transfer(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe_segme
     visit = get_or_create_visit(pv1_segment, patient)
 
     # get last stay with visit and end_date == None
-    stay = Stay.objects.filter(visit=visit, end_date=None).last()
+    stay = hospital_models.Stay.objects.filter(visit=visit, end_date=None).last()
 
     create_stay(pv1_segment, zbe_segment, visit, start_date)
 
@@ -190,14 +190,14 @@ def parse_discharge(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
     start_date = datetime.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
 
     # update the visit discharge_date
-    Visit.objects.filter(visit_id=visit_id).update(discharge_date=discharge_date)
+    hospital_models.Visit.objects.filter(visit_id=visit_id).update(discharge_date=discharge_date)
 
     # get last stay with visit and end_date == None
-    stay = Stay.objects.filter(visit_id=visit_id, end_date=None).last()
+    stay = hospital_models.Stay.objects.filter(visit_id=visit_id, end_date=None).last()
 
     # create discharge and save the new end_date if stay is not none
     if stay:
-        Discharge.objects.create(movement_id=movement_id, stay=stay)
+        hospital_models.Discharge.objects.create(movement_id=movement_id, stay=stay)
 
         stay.end_date = start_date  # TODO sollte das nicht lieber end of movement sein????? Ist das richtig???
         stay.save()
@@ -222,76 +222,63 @@ def get_or_create_patient(pid_segment: hl7.Segment):
 
     sex = pid_segment.extract_field(field_num=PID_SEX_FILED)
 
-    return Patient.objects.get_or_create(patient_id=patient_id,
-                                         defaults={"date_of_birth": date_of_birth,
-                                                   "sex": sex})[0]
+    return hospital_models.Patient.objects.get_or_create(patient_id=patient_id,
+                                                         defaults={"date_of_birth": date_of_birth,
+                                                                   "sex": sex})[0]
 
 
-def get_or_create_visit(pv1_segment: hl7.Segment, patient: Patient):
+def get_or_create_visit(pv1_segment: hl7.Segment, patient: hospital_models.Patient):
     visit_id_string = pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
     visit_id = int(visit_id_string)
 
-    admission_date_string = pv1_segment.extract_field(field_num=PV1_ADMISSION_DATE_FIELD)#is this right, if the patient was not in ward before
+    admission_date_string = pv1_segment.extract_field(
+        field_num=PV1_ADMISSION_DATE_FIELD)  # is this right, if the patient was not in ward before
     admission_date = datetime.datetime.strptime(admission_date_string, HL7_DATE_TIME_FORMAT)
-    return Visit.objects.get_or_create(visit_id=visit_id,
-                                       defaults={"admission_date": admission_date,
-                                                 "patient": patient})[0]
 
-
-def get_or_create_department(pv1_segment: hl7.Segment, ward: Ward,
-                             start_date: datetime.datetime):  # TODO change with mixin for all locations
-    department_name = get_name_from_patient_location(pv1_segment, PATIENT_LOCATION_DEPARTMENT_COMPONENT)
-
-    department_query_set = Department.objects.filter(date_of_activation__lte=start_date,
-                                                     date_of_expiry__gte=start_date)
-    department, created = department_query_set.get_or_create(name=department_name,
-                                                             defaults={"date_of_activation": start_date,
-                                                                       "date_of_expiry": start_date + datetime.timedelta(
-                                                                           weeks=1)})
-
-    # add the ward to the department, if the department is recreated
-    if created:
-        department.wards.add(ward)
-
-    return department
+    return hospital_models.Visit.objects.get_or_create(visit_id=visit_id,
+                                                       defaults={"admission_date": admission_date,
+                                                                 "patient": patient})[0]
 
 
 def get_or_create_ward(pv1_segment: hl7.Segment,
-                       start_date: datetime.datetime):  # TODO change with mixin for all locations
-    ward_name = get_name_from_patient_location(pv1_segment, PATIENT_LOCATION_WARD_COMPONENT)
+                       start_date: datetime.datetime):
+    ward_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_WARD_COMPONENT)
 
-    ward_query_set = Ward.objects.filter(date_of_activation__lte=start_date,
-                                         date_of_expiry__gte=start_date)
+    ward_query_set = hospital_models.Ward.objects.filter(date_of_activation__lte=start_date,
+                                                         date_of_expiry__gte=start_date)
 
-    return ward_query_set.get_or_create(name=ward_name,
-                                        defaults={"date_of_activation": start_date,
+    return ward_query_set.get_or_create(id=ward_id,
+                                        defaults={"name": ward_id,
+                                                  "date_of_activation": start_date,
                                                   "date_of_expiry": start_date + datetime.timedelta(weeks=1)})[0]
 
 
-def get_or_create_room(pv1_segment: hl7.Segment, ward: Ward,
-                       start_date: datetime.datetime):  # TODO change with mixin for all locations
-    room_name = get_name_from_patient_location(pv1_segment, PATIENT_LOCATION_ROOM_COMPONENT)
+def get_or_create_room(pv1_segment: hl7.Segment, ward: hospital_models.Ward,
+                       start_date: datetime.datetime):
+    room_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_ROOM_COMPONENT)
 
-    room_query_set = Room.objects.filter(date_of_activation__lte=start_date,
-                                         date_of_expiry__gte=start_date)
+    room_query_set = hospital_models.Room.objects.filter(date_of_activation__lte=start_date,
+                                                         date_of_expiry__gte=start_date)
 
-    return room_query_set.get_or_create(name=room_name, ward=ward,
-                                        defaults={"date_of_activation": start_date,
+    return room_query_set.get_or_create(id=room_id, ward=ward,
+                                        defaults={"name": room_id,
+                                                  "date_of_activation": start_date,
                                                   "date_of_expiry": start_date + datetime.timedelta(weeks=1)})[0]
 
 
-def get_or_create_bed(pv1_segment: hl7.Segment, room: Room,
-                      start_date: datetime.datetime):  # TODO change with mixin for all locations
-    bed_name = get_name_from_patient_location(pv1_segment, PATIENT_LOCATION_BED_COMPONENT)
-    bed_query_set = Bed.objects.filter(date_of_activation__lte=start_date,
-                                       date_of_expiry__gte=start_date)
+def get_or_create_bed(pv1_segment: hl7.Segment, room: hospital_models.Room,
+                      start_date: datetime.datetime):
+    bed_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_BED_COMPONENT)
+    bed_query_set = hospital_models.Bed.objects.filter(date_of_activation__lte=start_date,
+                                                       date_of_expiry__gte=start_date)
 
-    return bed_query_set.get_or_create(name=bed_name, room=room,
-                                       defaults={"date_of_activation": start_date,
+    return bed_query_set.get_or_create(id=bed_id, room=room,
+                                       defaults={"name": bed_id,
+                                                 "date_of_activation": start_date,
                                                  "date_of_expiry": start_date + datetime.timedelta(weeks=1)})[0]
 
 
-def get_name_from_patient_location(pv1_segment: hl7.Segment, component_num: int):
+def get_id_from_patient_location(pv1_segment: hl7.Segment, component_num: int):
     """Get the name from the given component and set to unique number, if it is empty."""
 
     name = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
@@ -303,14 +290,14 @@ def get_name_from_patient_location(pv1_segment: hl7.Segment, component_num: int)
     return name
 
 
-def create_stay(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment, visit: Visit, start_date: datetime.datetime):
+def create_stay(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment, visit: hospital_models.Visit,
+                start_date: datetime.datetime):
     movement_id_string = zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
     movement_id = int(movement_id_string)
 
     ward = get_or_create_ward(pv1_segment, start_date)
-    department = get_or_create_department(pv1_segment, ward, start_date)
     room = get_or_create_room(pv1_segment, ward, start_date)
     bed = get_or_create_bed(pv1_segment, room, start_date)
 
-    return Stay.objects.create(movement_id=movement_id, start_date=start_date, visit=visit,
-                               bed=bed, room=room, ward=ward, department=department)
+    return hospital_models.Stay.objects.create(movement_id=movement_id, start_date=start_date, visit=visit,
+                                               bed=bed, room=room, ward=ward)

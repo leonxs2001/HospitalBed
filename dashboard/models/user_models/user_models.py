@@ -1,9 +1,8 @@
 from django.db import models
 
-from dashboard.models.hospital_models.hospital_models import Department, Ward, Room
+from dashboard.models.hospital_models import hospital_models
 from dashboard.models.user_models.user_managers import UserDataRepresentationManager, DataRepresentationManager
 from dashboard.utils import DATE_FORMAT
-
 
 
 class DataRepresentation(models.Model):
@@ -11,7 +10,6 @@ class DataRepresentation(models.Model):
 
     class LocationChoices(models.TextChoices):  # TODO namen dazu
         HOSPITAL = "H"
-        DEPARTMENT = "D"
         WARD = "W"
         ROOM = "R"
 
@@ -20,7 +18,6 @@ class DataRepresentation(models.Model):
         ALL_BEDS = "B"
         ALL_ROOMS = "R"
         ALL_WARDS = "W"
-        ALL_DEPARTMENTS = "D"
         HISTORY = "H"
 
     class TimeChoices(models.TextChoices):
@@ -57,9 +54,8 @@ class UserDataRepresentation(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     data_representation = models.ForeignKey(DataRepresentation, on_delete=models.PROTECT)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT, null=True)
-    ward = models.ForeignKey(Ward, on_delete=models.PROTECT, null=True)
-    room = models.ForeignKey(Room, on_delete=models.PROTECT, null=True)
+    ward = models.ForeignKey(hospital_models.Ward, on_delete=models.PROTECT, null=True)
+    room = models.ForeignKey(hospital_models.Room, on_delete=models.PROTECT, null=True)
 
     class Meta:  # TODO maxbe indexing? und meta reinnhemn in uml
         ordering = ["order"]
@@ -78,9 +74,7 @@ class UserDataRepresentation(models.Model):
 
     @property
     def location_id(self):
-        if self.department_id:
-            return self.department_id
-        elif self.ward_id:
+        if self.ward_id:
             return self.ward_id
         elif self.room_id:
             return self.room_id

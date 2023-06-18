@@ -1,7 +1,6 @@
 from django.db import models
 
-from dashboard.models.hospital_models.hopital_query_sets import WardQuerySet, DepartmentQuerySet, RoomQuerySet, \
-    BedQuerySet, HospitalBedQuerySet
+from dashboard.models.hospital_models import hopital_query_sets
 
 
 class Patient(models.Model):
@@ -10,13 +9,13 @@ class Patient(models.Model):
         FEMALE = "F", "Frau"
         DIVERSE = "D", "Divers"
 
-    patient_id = models.IntegerField(primary_key=True)
+    patient_id = models.BigIntegerField(primary_key=True)
     date_of_birth = models.DateField()
     sex = models.CharField(max_length=1, choices=SexChoices.choices)
 
 
 class Visit(models.Model):
-    visit_id = models.IntegerField(primary_key=True)
+    visit_id = models.BigIntegerField(primary_key=True)
     admission_date = models.DateTimeField()
     discharge_date = models.DateTimeField(null=True)
 
@@ -24,6 +23,7 @@ class Visit(models.Model):
 
 
 class LocationMixin(models.Model):
+    id = models.CharField(primary_key=True, max_length=32)
     name = models.CharField(max_length=32)
     date_of_activation = models.DateTimeField()
     date_of_expiry = models.DateTimeField()
@@ -36,22 +36,17 @@ class LocationMixin(models.Model):
 
 
 class Ward(LocationMixin):
-    objects = WardQuerySet.as_manager()
-
-
-class Department(LocationMixin):
-    objects = DepartmentQuerySet.as_manager()
-    wards = models.ManyToManyField(Ward)
+    objects = hopital_query_sets.WardQuerySet.as_manager()
 
 
 class Room(LocationMixin):
-    objects = RoomQuerySet.as_manager()
+    objects = hopital_query_sets.RoomQuerySet.as_manager()
     ward = models.ForeignKey(Ward, on_delete=models.PROTECT)
 
 
 class Bed(LocationMixin):
-    objects = BedQuerySet.as_manager()
-    hospital_objects = HospitalBedQuerySet.as_manager()
+    objects = hopital_query_sets.BedQuerySet.as_manager()
+    hospital_objects = hopital_query_sets.HospitalBedQuerySet.as_manager()
     room = models.ForeignKey(Room, on_delete=models.PROTECT)
 
 
@@ -61,7 +56,6 @@ class Stay(models.Model):
     movement_id = models.IntegerField()
 
     visit = models.ForeignKey(Visit, on_delete=models.PROTECT)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT)
     bed = models.ForeignKey(Bed, on_delete=models.PROTECT)
     ward = models.ForeignKey(Ward, on_delete=models.PROTECT)
     room = models.ForeignKey(Room, on_delete=models.PROTECT)

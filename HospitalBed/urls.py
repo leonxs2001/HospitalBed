@@ -21,7 +21,7 @@ from django.views.generic import TemplateView
 from dashboard.views.edit_user_data_views import UpdateOrderView, DeleteUserDataRepresentation, \
     CreateUserDataRepresentationView
 from dashboard.views.location_data_views import AllocationView
-from dashboard.views.main_views import DashboardView, create_data_representation
+from dashboard.views.main_views import DashboardView, create_data_representation, parse_hl7
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,7 +31,9 @@ urlpatterns = [
     path("update/order", UpdateOrderView.as_view()),
     path("delete/user-data-representation", DeleteUserDataRepresentation.as_view()),
     path("create/user-data_representation", CreateUserDataRepresentationView.as_view()),
+
     path("create/", create_data_representation),
+    path("parse/", parse_hl7),
 
     path("get_data/<str:location_type>/<str:theme_type>/<str:time_type>/", AllocationView.as_view())
 ]

@@ -53,7 +53,7 @@
     <!-- occupancy chart canvas -->
     <canvas class="information-chart-canvas data-holder" hidden></canvas>
 
-    <!-- location-div and location-head-div templates for rooms, wards and departments-->
+    <!-- location-div and location-head-div templates for rooms, wards-->
     <div class="location-list-head-div location-template">
         <h4 class="location-name-head"><!--Name of location (Station, Fachabteilung or Room)--></h4>
         <h4 class="location-occupancy-head">Auslastung</h4>
@@ -97,16 +97,28 @@
 
     <!-- room information template -->
     <div class="room-data-div data-holder" hidden>
-        <span class="room-age-span">
-            <h4>Durchschnittliches Alter:</h4>
-            <h4 class="room-age-h4"></h4>
+        <span class="room-free-beds-span">
+            <h4 class="room-heading-h4">Freie Betten: </h4>
+            <h4 class="room-free-beds-h4">
+                <!-- input the number of free beds-->
+            </h4>
         </span>
         <span class="room-sex-span">
-            <h4>Geschlecht: </h4>
+            <h4 class="room-heading-h4">Geschlecht: </h4>
             <h4 class="room-sex-h4">
                 <span class="sex-rectangle-span"></span>
                 <span class="sex-span"></span>
                 <!-- input the right gender + class for right color(male-rectangle, female-rectangle, diverse-rectangle, empty-rectangle)-->
+            </h4>
+        </span>
+        <span class="room-age-span">
+            <h4 class="room-heading-h4">&#216; Alter:</h4>
+            <h4 class="room-age-h4"></h4>
+        </span>
+        <span class="room-occupancy-span">
+            <h4 class="room-heading-h4">Auslastung: </h4>
+            <h4 class="room-occupancy-h4">
+                <!-- input the occupancy-->
             </h4>
         </span>
     </div>
@@ -137,9 +149,7 @@
         <ul class="child">
             {% for location_type, location_dict in structured_data_representations.items %}
                 <li class="selection parent">
-                    {% if location_type == "D" %}
-                        Fachabteilung
-                    {% elif location_type == "W" %}
+                    {% if location_type == "W" %}
                         Station
                     {% elif location_type == "R" %}
                         Zimmer
@@ -152,8 +162,6 @@
                             <li class="selection parent">
                                 {% if theme_type == "I" %}
                                     Informationen
-                                {% elif theme_type == "D" %}
-                                    Auslastung der Fachabteilungen
                                 {% elif theme_type == "W" %}
                                     Auslastung der Stationen
                                 {% elif theme_type == "R" %}
@@ -209,9 +217,7 @@
             </div>
             <div class="content-view-input-div">
                 <div class="location-input-div">
-                    {% if user_data_representation.data_representation.location_type == "D" %}
-                        {% include 'location_select.html' with locations=departments user_data_representation=user_data_representation now=now selected_location=user_data_representation.department %}
-                    {% elif user_data_representation.data_representation.location_type == "W" %}
+                    {% if user_data_representation.data_representation.location_type == "W" %}
                         {% include 'location_select.html' with locations=wards user_data_representation=user_data_representation now=now selected_location=user_data_representation.ward %}
                     {% elif user_data_representation.data_representation.location_type == "R" %}
                         {% include 'location_select.html' with locations=rooms user_data_representation=user_data_representation now=now selected_location=user_data_representation.room %}

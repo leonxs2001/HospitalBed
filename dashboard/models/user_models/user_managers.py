@@ -34,7 +34,6 @@ class UserDataRepresentationManager(models.Manager):
     def create_user_data_representation(self, data_representation, user):
         time = None
         end_time = None
-        department = None
         ward = None
         room = None
         # TODO was wenn nichts gegeben, weil leer? --> beim get?
@@ -44,20 +43,17 @@ class UserDataRepresentationManager(models.Manager):
             time = datetime.datetime.now() - datetime.timedelta(weeks=4)
             end_time = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
 
-        if data_representation.location_type == user_models.DataRepresentation.LocationChoices.DEPARTMENT:
-            department = hospital_models.Department.objects.first()
-        elif data_representation.location_type == user_models.DataRepresentation.LocationChoices.WARD:
+        if data_representation.location_type == user_models.DataRepresentation.LocationChoices.WARD:
             ward = hospital_models.Ward.objects.first()
         elif data_representation.location_type == user_models.DataRepresentation.LocationChoices.ROOM:
             room = hospital_models.Room.objects.first()
 
         max_order = max_order = user_models.UserDataRepresentation.objects.aggregate(max_order=models.Max('order'))['max_order']
-
         new_order = 0
-        if max_order:
+        if max_order != None:
             new_order = max_order + 1
 
         return self.create(time=time, end_time=end_time, order=new_order,
                            user=user, data_representation=data_representation,
-                           ward=ward, department=department, room=room)
+                           ward=ward, room=room)
 

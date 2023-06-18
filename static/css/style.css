@@ -347,14 +347,19 @@ body {
     color: green;
 }
 
-.room-age-span, .room-sex-span {
+.room-age-span, .room-sex-span, .room-occupancy-span, .room-free-beds-span {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
 }
 
-.room-age-h4, .room-sex-h4 {
+.room-age-h4, .room-sex-h4, .room-occupancy-h4, .room-free-beds-h4 {
     width: 40%;
+    margin: 2.5% 0;
+}
+
+.room-heading-h4 {
+    margin: 3% 0;
 }
 
 .room-data-div {
@@ -380,8 +385,12 @@ body {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 @media only screen and (min-width: 1650px) {
