@@ -4,12 +4,13 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.db.models import Manager
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, HttpResponse
 from django.views import View
 
 from dashboard.models.user_models import user_models
 from dashboard.models.hospital_models import hospital_models
-from dashboard.services.view_service import get_locations_for_time, set_new_user_data_representation_location
+from dashboard.services.view_service import get_locations_for_time, set_new_user_data_representation_location, \
+    create_csv_file_response, is_location_id_in_locations
 from dashboard.utils import ModelJSONEncoder, DATE_FORMAT
 
 from django.db.utils import IntegrityError
@@ -21,17 +22,13 @@ class LocationDataResponseView(View, ABC):
     time_type = ""
 
     def get(self, request):
+        now = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+
         user_data_representation = user_models.UserDataRepresentation.objects.get(id=request.GET["id"])
+        locations = None
+
         if request.GET["update_flag"] == "true":
             changed = False
-
-            if self.location_type != user_models.DataRepresentation.LocationChoices.HOSPITAL:
-                changed = True
-                location_id = request.GET["location_id"]
-                if self.location_type == user_models.DataRepresentation.LocationChoices.WARD:
-                    user_data_representation.ward_id = location_id
-                elif self.location_type == user_models.DataRepresentation.LocationChoices.ROOM:
-                    user_data_representation.room_id = location_id
 
             if self.time_type == user_models.DataRepresentation.TimeChoices.TIME:
                 changed = True
@@ -40,6 +37,23 @@ class LocationDataResponseView(View, ABC):
                 changed = True
                 user_data_representation.time = datetime.datetime.strptime(request.GET["time"], DATE_FORMAT)
                 user_data_representation.end_time = datetime.datetime.strptime(request.GET["end_time"], DATE_FORMAT)
+
+            locations = get_locations_for_time(user_data_representation, self.location_type, self.time_type, now)
+
+            if self.location_type != user_models.DataRepresentation.LocationChoices.HOSPITAL:
+                changed = True
+                location_id = request.GET["location_id"]
+                # set locationId to a random value (or None), if the location id does not exists in locatiosn
+                if not is_location_id_in_locations(location_id, locations):
+                    if len(locations) > 0:
+                        location_id = locations[0].id
+                    else:
+                        location_id = None
+
+                if self.location_type == user_models.DataRepresentation.LocationChoices.WARD:
+                    user_data_representation.ward_id = location_id
+                elif self.location_type == user_models.DataRepresentation.LocationChoices.ROOM:
+                    user_data_representation.room_id = location_id
 
             if changed:
                 try:
@@ -51,15 +65,16 @@ class LocationDataResponseView(View, ABC):
         context = self.get_context(request, user_data_representation)
         context["user_data_representation"] = user_models.UserDataRepresentation.objects.get(id=request.GET["id"])
 
-        now = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
-        locations = get_locations_for_time(user_data_representation, self.location_type, self.time_type, now)
-        if locations:
-            context["locations"] = locations
+        if request.GET["download"] == "true":
+            return create_csv_file_response(context, self.location_type, self.theme_type, self.time_type)
 
-        if "download" in request.GET:
-            # TODO do download stuff
-            pass
         else:
+            # get locations if not already got
+            if locations is None:
+                locations = get_locations_for_time(user_data_representation, self.location_type, self.time_type, now)
+
+            if locations:
+                context["locations"] = locations
             return JsonResponse(context, ModelJSONEncoder)
 
     @abstractmethod

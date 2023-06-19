@@ -244,6 +244,7 @@ body {
     width: 100%;
     display: flex;
     align-content: center;
+    margin: 1% 0;
 }
 
 .location-name-span {
@@ -260,7 +261,7 @@ body {
     margin: auto 0;
 }
 
-.location-indormation-chart-canvas {
+.location-occupancy-chart-canvas {
     width: 60% !important;
     height: 1.8vh !important;
     margin: 0.1vh 0;
@@ -351,20 +352,27 @@ body {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    width: 100%;
 }
 
 .room-age-h4, .room-sex-h4, .room-occupancy-h4, .room-free-beds-h4 {
     width: 40%;
-    margin: 2.5% 0;
+    margin: 0;
 }
 
 .room-heading-h4 {
-    margin: 3% 0;
+    margin: 0;
 }
 
 .room-data-div {
     width: 70%;
     margin: 7% auto;
+    display: flex;
+    flex-direction: column;
+    align-content: space-between;
+    flex-wrap: wrap;
+    justify-content: space-between;
+
 }
 
 .occupancy-history-chart-canvas {
@@ -413,6 +421,7 @@ body {
     #user-div {
         font-size: 0.9em;
     }
+
 }
 
 @media (orientation: portrait) {
@@ -464,11 +473,12 @@ body {
         top: -9vh;
     }
 
-    .location-information-chart-canvas {
+    .location-occupancy-chart-canvas {
         height: 3vh !important;
     }
 
     .occupancy-history-chart-canvas {
         height: 50vh !important;
     }
+
 }

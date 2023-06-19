@@ -6,6 +6,7 @@ from django.forms import model_to_dict
 from django.db import models
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M"
+GERMAN_DATE_FORMAT = "%d.%m.%Y %H:%M Uhr"
 
 
 class ModelJSONEncoder(DjangoJSONEncoder):

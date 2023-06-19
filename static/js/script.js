@@ -7,10 +7,9 @@ const locationSelectTemplate = document.querySelector("#template-div .selection-
 const occupancyChartCanvasTemplate = document.querySelector("#template-div .information-chart-canvas");
 const occupancyHistoryChartCanvasTemplate = document.querySelector("#template-div .occupancy-history-chart-canvas");
 const locationListHeadDivTemplate = document.querySelector("#template-div .location-list-head-div.location-template");
-const locationListDivTemplate = document.querySelector("#template-div .location-list-div.location-template");
+const locationListDivTemplate = document.querySelector("#template-div .location-list-div");
 const locationDivTemplate = document.querySelector("#template-div .location-div.location-template");
 const bedListHeadDivTemplate = document.querySelector("#template-div .location-list-head-div.bed-template");
-const bedListDivTemplate = document.querySelector("#template-div .location-list-div.bed-template");
 const bedDivTemplate = document.querySelector("#template-div .location-div.bed-template");
 const roomDataDiv = document.querySelector("#template-div .room-data-div");
 const loaderTemplate = document.querySelector("#template-div .loader");
@@ -39,109 +38,6 @@ window.addEventListener("load", () => {
         fetchDataForContentViewDataDiv(contentView);
 
     });
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    /*new Chart(newInformationCanvasTemplate, {//TODO erst beim befüllen
-            type: 'doughnut',
-            data: {
-                labels: ["Männer", 'Frauen', 'Diverse', 'Leer'],
-                datasets: [
-                    {
-                        data: [5, 6, 1, 10],
-                        backgroundColor: ["blue", "orange", "green", "grey"],
-                    },
-                    {
-                        data: [12, 20, 60],
-                        hidden: true
-                    }
-                ]
-            },
-            plugins: [{
-                id: 'text_in_doughnut_chart',
-                beforeDraw: (chart, args, options) => {
-                    const x = chart.getDatasetMeta(0).data[0].x;
-                    const y = chart.getDatasetMeta(0).data[0].y;
-                    const data = chart.data.datasets[1].data;
-
-                    const {ctx} = chart;
-                    ctx.save();
-                    ctx.fillStyle = "#000000";
-                    ctx.font = "1.2em Arial";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "bottom"
-                    ctx.fillText(`${data[0]} / ${data[1]}`, x, y);
-                    ctx.textBaseline = "top"
-                    ctx.fillText(`${data[2]}%`, x, y);
-                    ctx.restore();
-                },
-                defaults: {
-                    color: 'lightGreen'
-                }
-            }],
-            options: {
-                cutout: "60%",
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            generateLabels: chart => {
-                                const datasets = chart.data.datasets;
-                                return datasets[0].data.map((data, i) => ({
-                                    text: `${chart.data.labels[i]} ${datasets[0].data[i]} / ${datasets[1].data[1]}`,
-                                    fillStyle: datasets[0].backgroundColor[i],
-                                    index: i
-                                }))
-                            }
-                        }
-                    }
-                },
-            }
-        });
-    let ctx2 = document.querySelector('#myChart2');
-    var bar_chart = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: ["Fachbereichname"],
-            datasets: [{
-                label: "belegt",
-                data: [10],
-                backgroundColor: "green"
-            }, {
-                label: "leer",
-                data: [10],
-                backgroundColor: "grey",
-            },]
-        },
-        options: {
-            events: [],
-            plugins: {
-                legend: {
-                    display: false,
-                }
-            },
-            indexAxis: 'y',
-            interaction: {
-                intersect: false,
-            },
-            scales: {
-                x: {
-                    stacked: true,
-                    display: false
-                },
-                y: {
-                    stacked: true,
-                    display: false
-                },
-            }
-        } // options
-    });
-
-
-    let ctx3 = document.querySelector('#myChart3');
-    let chart3 = */
 });
 
 // drag and drop methods
@@ -278,11 +174,12 @@ function onDownloadDataForView(event) {
     const element = event.target;
     const contentView = element.closest(".content-view");
 
-    const location = contentView.dataset.location;
-    const theme = contentView.dataset.theme;
-    const time = contentView.dataset.time;
+    const locationType = contentView.dataset.location;
+    const themeType = contentView.dataset.theme;
+    const timeType = contentView.dataset.time;
 
-    //TODO redirect to new tab and download with all important data
+    let url = createUrl(locationType, themeType, timeType, contentView, false, true);
+    window.open(url, "_blank");
 }
 
 //changement of the time inputs or the location selct
@@ -411,7 +308,7 @@ function buildContentViewDataDiv(contentView, locationType, themeType) {
         contentDataDiv.appendChild(occupancyHistoryChartCanvasTemplate.cloneNode(true));
     } else if (themeType == "B") {
         contentDataDiv.appendChild(bedListHeadDivTemplate.cloneNode(true));
-        const bedListDiv = bedListDivTemplate.cloneNode(true);
+        const bedListDiv = locationListDivTemplate.cloneNode(true);
         bedListDiv.appendChild(loaderTemplate.cloneNode(true));
         contentDataDiv.appendChild(bedListDiv);
     } else {
@@ -472,32 +369,14 @@ function addEmptyOptionToSelect(select) {// TODO add error message
     select.appendChild(newOption);
 }
 
-//fills the content view with the right data
-function fetchDataForContentViewDataDiv(contentView, updateInputs = false) {
-    const locationType = contentView.dataset.location;// TODO change inconsistent format
-    const themeType = contentView.dataset.theme;
-    const timeType = contentView.dataset.time;
-
-    const loader = contentView.querySelector(".loader");
-    const dataHolder = contentView.querySelector(".data-holder");
-    if (dataHolder) {
-        dataHolder.hidden = true;
-    } else {
-        const locationListDiv = contentView.querySelector(".location-list-div");
-        const locationDivs = locationListDiv.querySelectorAll(".location-div");
-        locationDivs.forEach(locationDiv => {
-            locationListDiv.removeChild(locationDiv);
-        });
-    }
-    loader.hidden = false;
-
-
-    // create the right url
+function createUrl(locationType, themeType, timeType, contentView, updateInputs, downloadCSV) {
     let url = new URL(location.protocol + "//" + location.host + "/get_data" + "/" + locationType + "/" + themeType + "/" + timeType + "/");
 
     url.searchParams.append("id", contentView.dataset.id);
 
     url.searchParams.append("update_flag", updateInputs.toString());
+
+    url.searchParams.append("download", downloadCSV.toString());
 
     //add the id param, if it's a list of occupancies
     if (locationType != "H") {
@@ -525,6 +404,31 @@ function fetchDataForContentViewDataDiv(contentView, updateInputs = false) {
         url.searchParams.append("time", fromTime);
         url.searchParams.append("end_time", toTime);
     }
+    return url;
+}
+
+//fills the content view with the right data
+function fetchDataForContentViewDataDiv(contentView, updateInputs = false) {
+    const locationType = contentView.dataset.location;// TODO change inconsistent format
+    const themeType = contentView.dataset.theme;
+    const timeType = contentView.dataset.time;
+
+    const loader = contentView.querySelector(".loader");
+    const dataHolder = contentView.querySelector(".data-holder");
+    if (dataHolder) {
+        dataHolder.hidden = true;
+    } else {
+        const locationListDiv = contentView.querySelector(".location-list-div");
+        const locationDivs = locationListDiv.querySelectorAll(".location-div");
+        locationDivs.forEach(locationDiv => {
+            locationListDiv.removeChild(locationDiv);
+        });
+    }
+    loader.hidden = false;
+
+
+    // create the right url
+    let url = createUrl(locationType, themeType, timeType, contentView, updateInputs, false);
 
     fetch(url.toString(), {
         method: "GET",
@@ -537,7 +441,6 @@ function fetchDataForContentViewDataDiv(contentView, updateInputs = false) {
         }
         throw new Error("Request failed.");
     }).then(data => {
-        console.log(data);
         if (updateInputs) {
             const locations = data.locations;
             const user_data_representation = data.user_data_representation;
@@ -569,11 +472,32 @@ function fillContentViewDataDivWithData(contentView, data, locationType, themeTy
         }
     } else if (themeType == "H") {
         fillLocationHistoryDataDiv(dataDiv, data, locationType);
+    } else if (themeType == "B") {
+        fillBedsInformationDataDiv(dataDiv, data);
+    } else {
+        fillLocationsInformationDataDiv(dataDiv, data);
     }
 
     loader.hidden = true;
 
 
+}
+
+function setClassForSexRectangle(locationData, sexRectangle, sexSpan) {
+    sexRectangle.classList.remove("male-rectangle", "female-rectangle", "diverse-rectangle", "empty-rectangle");
+    if (locationData.number_of_men > 0) {
+        sexRectangle.classList.add("male-rectangle");
+        sexSpan.innerText = "Männlich";
+    } else if (locationData.number_of_women > 0) {
+        sexRectangle.classList.add("female-rectangle");
+        sexSpan.innerText = "Weiblich";
+    } else if (locationData.number_of_diverse > 0) {
+        sexRectangle.classList.add("diverse-rectangle");
+        sexSpan.innerText = "Divers";
+    } else {
+        sexRectangle.classList.add("empty-rectangle");//TODO add empty view!
+        sexSpan.innerText = "Leer";
+    }
 }
 
 function fillRoomInformationDataDiv(dataDiv, data) {
@@ -584,32 +508,23 @@ function fillRoomInformationDataDiv(dataDiv, data) {
     const occupancyH4 = roomDataDiv.querySelector(".room-occupancy-h4");
     const freeBedsH4 = roomDataDiv.querySelector(".room-free-beds-h4");
 
-    roomDataDiv.hidden = false;
-
     const roomData = data["data"];
     if (roomData.length == 0) {
         //TODO show error!
+        console.log("ja");
+        roomDataDiv.hidden = true;
+        roomDataDiv.style.display = 'none';
     } else {
         const singleRoomData = roomData[0];
-        sexRectangle.classList.remove(...sexRectangle.classList);
-        sexRectangle.classList.add("sex-rectangle-span");
-        if (singleRoomData.number_of_men > 0) {
-            sexRectangle.classList.add("male-rectangle");
-            sexSpan.innerText = "Männlich";
-        } else if (singleRoomData.number_of_women > 0) {
-            sexRectangle.classList.add("female-rectangle");
-            sexSpan.innerText = "Weiblich";
-        } else if (singleRoomData.number_of_diverse > 0) {
-            sexRectangle.classList.add("diverse-rectangle");
-            sexSpan.innerText = "Divers";
-        } else {
-            sexRectangle.classList.add("empty-rectangle");//TODO add empty view!
-            sexSpan.innerText = "Leer";
-        }
+
+        setClassForSexRectangle(singleRoomData, sexRectangle, sexSpan);
 
         ageH4.innerText = singleRoomData.average_age;
         occupancyH4.innerText = singleRoomData.occupancy + "%";
         freeBedsH4.innerText = singleRoomData.max_number - singleRoomData.number;
+
+        roomDataDiv.hidden = false;
+        roomDataDiv.style.display = 'flex';
     }
 }
 
@@ -618,6 +533,7 @@ function fillLocationInformationDataDiv(dataDiv, data, locationType) {
     const canvas = dataDiv.querySelector(".information-chart-canvas");
 
     if (locationData.length == 0) {
+        console.log("ja", locationData);
         //TODO show error!
         canvas.hidden = true;
         canvas.style.display = 'none';
@@ -772,5 +688,78 @@ function getOrCreateHistoryChart(canvas) {
         });
     }
     return chart;
+}
+
+function fillLocationsInformationDataDiv(dataDiv, data) {
+    const locationsData = data["data"];
+    const locationListDiv = dataDiv.querySelector(".location-list-div");
+
+    locationsData.forEach(locationData => {
+        const newLocationDiv = locationDivTemplate.cloneNode(true);
+        const nameSpan = newLocationDiv.querySelector(".location-name-span");
+        const occupancySpan = newLocationDiv.querySelector(".location-occupancy-span");
+        const chartCanvas = newLocationDiv.querySelector(".location-occupancy-chart-canvas");
+
+        nameSpan.innerText = locationData.name;
+        occupancySpan.innerText = locationData.occupancy + "%";
+
+        new Chart(chartCanvas, {
+            type: 'bar',
+            data: {
+                labels: [locationData.name],
+                datasets: [{
+                    label: "belegt",
+                    data: [locationData.number],
+                    backgroundColor: "green"
+                }, {
+                    label: "leer",
+                    data: [locationData.max_number - locationData.number],
+                    backgroundColor: "grey",
+                },]
+            },
+            options: {
+                events: [],
+                plugins: {
+                    legend: {
+                        display: false,
+                    }
+                },
+                indexAxis: 'y',
+                interaction: {
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        display: false
+                    },
+                    y: {
+                        stacked: true,
+                        display: false
+                    },
+                }
+            }
+        });
+
+        locationListDiv.appendChild(newLocationDiv);
+    });
+}
+
+function fillBedsInformationDataDiv(dataDiv, data) {
+    const bedsData = data["data"];
+    const bedListDiv = dataDiv.querySelector(".location-list-div");
+
+    bedsData.forEach(bedData => {
+        const newBedDiv = bedDivTemplate.cloneNode(true);
+        const nameSpan = newBedDiv.querySelector(".bed-name-span");
+        const ageSpan = newBedDiv.querySelector(".bed-age-span");
+        const sexSpan = newBedDiv.querySelector(".bed-sex-span");
+        const sexRectangle = newBedDiv.querySelector(".sex-rectangle");
+        setClassForSexRectangle(bedData, sexRectangle, sexSpan);
+        nameSpan.innerText = bedData.name;
+        ageSpan.innerText = bedData.average_age;
+
+        bedListDiv.appendChild(newBedDiv);
+    });
 }
 
