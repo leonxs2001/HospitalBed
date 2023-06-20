@@ -53,7 +53,7 @@ def parse_all_hl7_messages():
 
 def get_hl7_message_from_file(filename: str):
     hl7_messages = []
-    with open(settings.HL7_DIRECTORY + "/" + filename, "r") as hl7_file:
+    with open(settings.HL7_DIRECTORY + "/" + filename, "r", encoding="ISO-8859-1") as hl7_file:
         # read the string from the file
         hl7_messages_string = hl7_file.read()
 

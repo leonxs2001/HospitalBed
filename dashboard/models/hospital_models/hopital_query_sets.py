@@ -1,12 +1,16 @@
 import datetime
 from abc import ABC, abstractmethod
-from zoneinfo import ZoneInfo
 
-from django.db import models
+from django.db import models, IntegrityError
 from django.db.models import functions
 
-from HospitalBed.settings import TIME_ZONE
-from dashboard.utils import DATE_FORMAT
+
+class GetOrCreateQuerySetMixin(models.QuerySet, ABC):
+    def get_or_create(self, defaults=None, **kwargs):
+        try:
+            return super(GetOrCreateQuerySetMixin, self).get_or_create(defaults, **kwargs)
+        except IntegrityError:
+            return self.get(**kwargs), True
 
 
 class SexAnnotationQuerySetMixin(models.QuerySet, ABC):
@@ -71,7 +75,8 @@ class TimeQuerySetMixin(models.QuerySet, ABC):
         return self.filter(date_of_activation__lt=time, date_of_expiry__gt=time)
 
     def filter_for_period(self, start: datetime, end: datetime):
-        return self.filter(models.Q(date_of_activation__range=(start, end)) | models.Q(date_of_expiry__range=(start, end)))
+        return self.filter(
+            models.Q(date_of_activation__range=(start, end)) | models.Q(date_of_expiry__range=(start, end)))
 
 
 class LocationInformationQuerySetMixin(TimeQuerySetMixin, ABC):
@@ -109,7 +114,7 @@ class LocationOccupancyQuerySetMixin(TimeQuerySetMixin, ABC):
 
 
 class WardQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMixin, LocationFilterQuerySetMixin,
-                   SexAnnotationQuerySetMixin):
+                   SexAnnotationQuerySetMixin, GetOrCreateQuerySetMixin):
 
     def all_from_ward(self, ward_id: str):
         return self.filter_for_id(ward_id)
@@ -139,8 +144,7 @@ class WardQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMi
 
 
 class RoomQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMixin, LocationFilterQuerySetMixin,
-                   SexAnnotationQuerySetMixin,
-                   AgeAnnotationQuerySetMixin):
+                   SexAnnotationQuerySetMixin, AgeAnnotationQuerySetMixin, GetOrCreateQuerySetMixin):
 
     def all_from_ward(self, ward_id: str):
         return self.filter(ward__id=ward_id)
@@ -170,7 +174,7 @@ class RoomQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMi
 
 
 class BedQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin, SexAnnotationQuerySetMixin,
-                  AgeAnnotationQuerySetMixin):
+                  AgeAnnotationQuerySetMixin, GetOrCreateQuerySetMixin):
 
     def all_from_ward(self, ward_id: str):
         return self.filter(room__ward__id=ward_id)
