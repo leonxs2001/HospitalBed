@@ -5,14 +5,6 @@ from django.db import models, IntegrityError
 from django.db.models import functions
 
 
-class GetOrCreateQuerySetMixin(models.QuerySet, ABC):
-    def get_or_create(self, defaults=None, **kwargs):
-        try:
-            return super(GetOrCreateQuerySetMixin, self).get_or_create(defaults, **kwargs)
-        except IntegrityError:
-            return self.get(**kwargs), True
-
-
 class SexAnnotationQuerySetMixin(models.QuerySet, ABC):
     number_of_men = models.Count("stay", distinct=True,
                                  filter=models.Q(stay__visit__patient__sex="M"))
@@ -114,7 +106,7 @@ class LocationOccupancyQuerySetMixin(TimeQuerySetMixin, ABC):
 
 
 class WardQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMixin, LocationFilterQuerySetMixin,
-                   SexAnnotationQuerySetMixin, GetOrCreateQuerySetMixin):
+                   SexAnnotationQuerySetMixin):
 
     def all_from_ward(self, ward_id: str):
         return self.filter_for_id(ward_id)
@@ -144,7 +136,7 @@ class WardQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMi
 
 
 class RoomQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMixin, LocationFilterQuerySetMixin,
-                   SexAnnotationQuerySetMixin, AgeAnnotationQuerySetMixin, GetOrCreateQuerySetMixin):
+                   SexAnnotationQuerySetMixin, AgeAnnotationQuerySetMixin):
 
     def all_from_ward(self, ward_id: str):
         return self.filter(ward__id=ward_id)
@@ -174,7 +166,7 @@ class RoomQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMi
 
 
 class BedQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin, SexAnnotationQuerySetMixin,
-                  AgeAnnotationQuerySetMixin, GetOrCreateQuerySetMixin):
+                  AgeAnnotationQuerySetMixin):
 
     def all_from_ward(self, ward_id: str):
         return self.filter(room__ward__id=ward_id)

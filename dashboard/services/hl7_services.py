@@ -244,38 +244,33 @@ def get_or_create_ward(pv1_segment: hl7.Segment,
                        start_date: datetime.datetime):
     ward_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_WARD_COMPONENT)
 
-    ward_query_set = hospital_models.Ward.objects.filter(date_of_activation__lte=start_date,
-                                                         date_of_expiry__gte=start_date)
-
-    return ward_query_set.get_or_create(id=ward_id,
-                                        defaults={"name": ward_id,
-                                                  "date_of_activation": start_date,
-                                                  "date_of_expiry": start_date + datetime.timedelta(weeks=1)})[0]
+    return hospital_models.Ward.objects.get_or_create(id=ward_id,
+                                                      defaults={"name": ward_id,
+                                                                "date_of_activation": start_date,
+                                                                "date_of_expiry": start_date + datetime.timedelta(
+                                                                    weeks=1)})[0]
 
 
 def get_or_create_room(pv1_segment: hl7.Segment, ward: hospital_models.Ward,
                        start_date: datetime.datetime):
     room_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_ROOM_COMPONENT)
 
-    room_query_set = hospital_models.Room.objects.filter(date_of_activation__lte=start_date,
-                                                         date_of_expiry__gte=start_date)
-
-    return room_query_set.get_or_create(id=room_id, ward=ward,
-                                        defaults={"name": room_id,
-                                                  "date_of_activation": start_date,
-                                                  "date_of_expiry": start_date + datetime.timedelta(weeks=1)})[0]
+    return hospital_models.Room.objects.get_or_create(id=room_id, ward=ward,
+                                                      defaults={"name": room_id,
+                                                                "date_of_activation": start_date,
+                                                                "date_of_expiry": start_date + datetime.timedelta(
+                                                                    weeks=1)})[0]
 
 
 def get_or_create_bed(pv1_segment: hl7.Segment, room: hospital_models.Room,
                       start_date: datetime.datetime):
     bed_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_BED_COMPONENT)
-    bed_query_set = hospital_models.Bed.objects.filter(date_of_activation__lte=start_date,
-                                                       date_of_expiry__gte=start_date)
 
-    return bed_query_set.get_or_create(id=bed_id, room=room,
-                                       defaults={"name": bed_id,
-                                                 "date_of_activation": start_date,
-                                                 "date_of_expiry": start_date + datetime.timedelta(weeks=1)})[0]
+    return hospital_models.Bed.objects.get_or_create(id=bed_id, room=room,
+                                                     defaults={"name": bed_id,
+                                                               "date_of_activation": start_date,
+                                                               "date_of_expiry": start_date + datetime.timedelta(
+                                                                   weeks=1)})[0]
 
 
 def get_id_from_patient_location(pv1_segment: hl7.Segment, component_num: int):
