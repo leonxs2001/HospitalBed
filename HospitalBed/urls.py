@@ -21,12 +21,17 @@ from django.views.generic import TemplateView
 from dashboard.views.edit_user_data_views import UpdateOrderView, DeleteUserDataRepresentation, \
     CreateUserDataRepresentationView
 from dashboard.views.location_data_views import AllocationView
-from dashboard.views.main_views import DashboardView, create_data_representation, parse_hl7
+from dashboard.views.main_views import DashboardView, create_data_representation, parse_hl7, RegistrationView, \
+    LoginView, LogoutView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('', DashboardView.as_view()),
+    path('', DashboardView.as_view(), name="home"),
+    path("registration/", RegistrationView.as_view()),
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view()),
+
 
     path("update/order", UpdateOrderView.as_view()),
     path("delete/user-data-representation", DeleteUserDataRepresentation.as_view()),

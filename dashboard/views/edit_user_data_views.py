@@ -2,7 +2,9 @@ import datetime
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
+from django.utils.decorators import method_decorator
 from django.views import View
 
 import json
@@ -13,6 +15,7 @@ from dashboard.utils import ModelJSONEncoder
 
 
 class UpdateOrderView(View):
+    @method_decorator(login_required)
     def put(self, request):
         data = json.loads(request.body.decode("utf-8"))
 
@@ -23,6 +26,7 @@ class UpdateOrderView(View):
 
 
 class DeleteUserDataRepresentation(View):
+    @method_decorator(login_required)
     def delete(self, request):
         data = json.loads(request.body.decode("utf-8"))
         UserDataRepresentation.objects.filter(id=int(data["id"])).delete()
@@ -31,6 +35,7 @@ class DeleteUserDataRepresentation(View):
 
 
 class CreateUserDataRepresentationView(View):
+    @method_decorator(login_required)
     def post(self, request):
         data = json.loads(request.body.decode("utf-8"))
         location_type = data["location_type"]

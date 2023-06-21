@@ -15,6 +15,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from django.contrib.staticfiles.views import serve
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # hl7 directory with all the files
@@ -97,6 +98,8 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = "dashboard.User"
+LOGIN_URL = "/login/"
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

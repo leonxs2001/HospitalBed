@@ -1,8 +1,16 @@
 import datetime
 
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
+from django.shortcuts import render, redirect
+from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.generic import TemplateView
 
+from dashboard.models import User
 from dashboard.models.user_models import user_models
 from dashboard.models.hospital_models import hospital_models
 from dashboard.services.hl7_services import parse_all_hl7_messages
@@ -54,12 +62,59 @@ def parse_hl7(request):
     return HttpResponse()
 
 
+class CustomUserCreationForm(UserCreationForm):#TODO place for forms
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username',)
+
+
+class RegistrationView(View):
+    def get(self, request):
+        return render(request, "registration.html", {
+            "form": CustomUserCreationForm()
+        })
+
+    def post(self, request):
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')
+
+
+class LoginView(View):
+    def get(self, request):
+        return render(request, "login.html", {
+            "form": AuthenticationForm()
+        })
+
+    def post(self, request):
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("home")
+        return render(request, "login.html", {
+            "form": form
+        })
+
+
+class LogoutView(View):
+    def get(self, request):
+        logout(request)
+
+        return redirect("login")
+
+
+@method_decorator(login_required, name="get")
 class DashboardView(TemplateView):
     template_name = "dashboard.html"
 
     def get_context_data(self, **kwargs):
         context = super(DashboardView, self).get_context_data(**kwargs)
-        user = user_models.User.objects.all().first()
+        user = self.request.user
         context["user"] = user
 
         user_data_representations = user_models.UserDataRepresentation.objects.filter(user=user) \

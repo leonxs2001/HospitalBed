@@ -7,6 +7,10 @@ from django.db import models
 from dashboard.models.hospital_models import hospital_models
 from dashboard.models.user_models import user_models
 
+class UserManager(models.Manager):
+    def get_by_natural_key(self, username):
+        return self.get(username=username)
+
 class DataRepresentationManager(models.Manager):
     def structured_data_representations(self):
         structured_result = dict()

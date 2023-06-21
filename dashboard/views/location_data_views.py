@@ -3,8 +3,10 @@ from abc import ABC, abstractmethod
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.db.models import Manager
 from django.http import JsonResponse, FileResponse, HttpResponse
+from django.utils.decorators import method_decorator
 from django.views import View
 
 from dashboard.models.user_models import user_models
@@ -168,6 +170,7 @@ class HospitalHistoryView(LocationHistoryView):
 
 
 class AllocationView(View):
+    @method_decorator(login_required)
     def get(self, request, location_type, theme_type, time_type):
         user_models.DataRepresentation.objects.get(location_type=location_type,
                                                    theme_type=theme_type,

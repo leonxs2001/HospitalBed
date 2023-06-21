@@ -1,7 +1,9 @@
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 
 from dashboard.models.hospital_models import hospital_models
-from dashboard.models.user_models.user_managers import UserDataRepresentationManager, DataRepresentationManager
+from dashboard.models.user_models.user_managers import UserDataRepresentationManager, DataRepresentationManager, \
+    UserManager
 from dashboard.utils import DATE_FORMAT
 
 
@@ -39,10 +41,12 @@ class DataRepresentation(models.Model):
         unique_together = ('location_type', 'theme_type', 'time_type')
 
 
-class User(models.Model):
-    name = models.CharField(max_length=32)
+class User(AbstractBaseUser):
+    objects = UserManager()
+    username = models.CharField(max_length=32, unique=True)
 
     data_representations = models.ManyToManyField(DataRepresentation, through="UserDataRepresentation")
+    USERNAME_FIELD = "username"
 
 
 class UserDataRepresentation(models.Model):
