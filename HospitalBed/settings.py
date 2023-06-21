@@ -20,6 +20,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # hl7 directory with all the files
 HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/hl7_nachrichten"
 
+#rfc stuff
+ASHOST = 'sbb243.sbb.dom'
+CLIENT = '003'
+SYSNR = '00'
+USER = ''
+PASSWD = ''
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 

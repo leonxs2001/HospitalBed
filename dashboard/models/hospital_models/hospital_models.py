@@ -19,7 +19,7 @@ class Visit(models.Model):
     admission_date = models.DateTimeField()
     discharge_date = models.DateTimeField(null=True)
 
-    patient = models.ForeignKey(Patient, on_delete=models.PROTECT)
+    patient = models.ForeignKey(Patient, models.CASCADE)
 
 
 class LocationMixin(models.Model):
@@ -41,13 +41,13 @@ class Ward(LocationMixin):
 
 class Room(LocationMixin):
     objects = hopital_query_sets.RoomQuerySet.as_manager()
-    ward = models.ForeignKey(Ward, on_delete=models.PROTECT)
+    ward = models.ForeignKey(Ward,models.CASCADE)
 
 
 class Bed(LocationMixin):
     objects = hopital_query_sets.BedQuerySet.as_manager()
     hospital_objects = hopital_query_sets.HospitalBedQuerySet.as_manager()
-    room = models.ForeignKey(Room, on_delete=models.PROTECT)
+    room = models.ForeignKey(Room,models.CASCADE)
 
 
 class Stay(models.Model):
@@ -55,13 +55,13 @@ class Stay(models.Model):
     end_date = models.DateTimeField(null=True)
     movement_id = models.IntegerField()
 
-    visit = models.ForeignKey(Visit, on_delete=models.PROTECT)
-    bed = models.ForeignKey(Bed, on_delete=models.PROTECT)
-    ward = models.ForeignKey(Ward, on_delete=models.PROTECT)
-    room = models.ForeignKey(Room, on_delete=models.PROTECT)
+    visit = models.ForeignKey(Visit,models.CASCADE)
+    bed = models.ForeignKey(Bed,models.CASCADE)
+    ward = models.ForeignKey(Ward,models.CASCADE)
+    room = models.ForeignKey(Room,models.CASCADE)
 
 
 class Discharge(models.Model):
     movement_id = models.IntegerField()
 
-    stay = models.ForeignKey(Stay, on_delete=models.PROTECT)
+    stay = models.ForeignKey(Stay,models.CASCADE)

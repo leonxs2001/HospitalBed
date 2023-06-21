@@ -91,7 +91,7 @@ def parse_hl7_message(hl7_message: hl7.Message):
         elif trigger_event == "A03" or trigger_event == "A07":
             parse_discharge(pv1_segment, zbe_segment)
         elif trigger_event == "A08":
-            parse_update_patient(pid_segment)
+            parse_update_patient(pv1_segment, pid_segment, zbe_segment)
         elif trigger_event == "A11":
             parse_cancel_admit(pv1_segment, zbe_segment)
         elif trigger_event == "A12":
@@ -146,7 +146,7 @@ def parse_cancel_admit(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
         stay.delete()
 
 
-def parse_update_patient(pid_segment: hl7.Segment):
+def parse_update_patient(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe_segment: hl7.Segment):
     patient_id_string = pid_segment.extract_field(field_num=PID_PATIENT_ID_FIELD)
     patient_id = int(patient_id_string)
 
@@ -155,7 +155,14 @@ def parse_update_patient(pid_segment: hl7.Segment):
 
     sex = pid_segment.extract_field(field_num=PID_SEX_FILED)
 
-    hospital_models.Patient.objects.filter(patient_id=patient_id).update(date_of_birth=date_of_birth, sex=sex)
+    hospital_models.Patient.objects.filter(id=patient_id).update(sex=sex, date_of_birth=date_of_birth)
+
+    visit_id_string = pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
+    visit_id = int(visit_id_string)
+
+    # handle like a transfer if there are only closed stays
+    if not hospital_models.Stay.objects.filter(visit_id=visit_id, end_date=None).exists():
+        parse_transfer(pv1_segment, pid_segment, zbe_segment)
 
 
 def parse_transfer(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe_segment: hl7.Segment):
@@ -167,14 +174,17 @@ def parse_transfer(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe_segme
 
     # get last stay with visit and end_date == None
     stay = hospital_models.Stay.objects.filter(visit=visit, end_date=None).last()
-
-    create_stay(pv1_segment, zbe_segment, visit, start_date)
-
     # set end date if stay is not none
     # could be None if the parsing starts after the admission
     if stay:
         stay.end_date = start_date  # TODO sollte das nicht lieber end of movement sein????? Ist das richtig???
         stay.save()
+
+    # only create the new stay, if there is a given bed id
+    bed_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
+                                       component_num=PATIENT_LOCATION_BED_COMPONENT)
+    if bed_id:
+        create_stay(pv1_segment, zbe_segment, visit, start_date)
 
 
 def parse_discharge(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
@@ -204,13 +214,17 @@ def parse_discharge(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
 
 
 def parse_new_visit(pid_segment: hl7.Segment, pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
-    start_date_string = zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
-    start_date = datetime.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
+    # only parse the visit, if there is a given bed id
+    bed_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
+                                       component_num=PATIENT_LOCATION_BED_COMPONENT)
+    if bed_id:
+        start_date_string = zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
+        start_date = datetime.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
 
-    patient = get_or_create_patient(pid_segment)
-    visit = get_or_create_visit(pv1_segment, patient)
+        patient = get_or_create_patient(pid_segment)
+        visit = get_or_create_visit(pv1_segment, patient)
 
-    create_stay(pv1_segment, zbe_segment, visit, start_date)
+        create_stay(pv1_segment, zbe_segment, visit, start_date)
 
 
 def get_or_create_patient(pid_segment: hl7.Segment):
@@ -242,7 +256,8 @@ def get_or_create_visit(pv1_segment: hl7.Segment, patient: hospital_models.Patie
 
 def get_or_create_ward(pv1_segment: hl7.Segment,
                        start_date: datetime.datetime):
-    ward_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_WARD_COMPONENT)
+    ward_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
+                                        component_num=PATIENT_LOCATION_WARD_COMPONENT)
 
     return hospital_models.Ward.objects.get_or_create(id=ward_id,
                                                       defaults={"name": ward_id,
@@ -253,7 +268,8 @@ def get_or_create_ward(pv1_segment: hl7.Segment,
 
 def get_or_create_room(pv1_segment: hl7.Segment, ward: hospital_models.Ward,
                        start_date: datetime.datetime):
-    room_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_ROOM_COMPONENT)
+    room_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
+                                        component_num=PATIENT_LOCATION_ROOM_COMPONENT)
 
     return hospital_models.Room.objects.get_or_create(id=room_id, ward=ward,
                                                       defaults={"name": room_id,
@@ -264,7 +280,8 @@ def get_or_create_room(pv1_segment: hl7.Segment, ward: hospital_models.Ward,
 
 def get_or_create_bed(pv1_segment: hl7.Segment, room: hospital_models.Room,
                       start_date: datetime.datetime):
-    bed_id = get_id_from_patient_location(pv1_segment, PATIENT_LOCATION_BED_COMPONENT)
+    bed_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
+                                       component_num=PATIENT_LOCATION_BED_COMPONENT)
 
     return hospital_models.Bed.objects.get_or_create(id=bed_id, room=room,
                                                      defaults={"name": bed_id,

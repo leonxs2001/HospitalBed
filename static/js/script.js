@@ -27,6 +27,7 @@ class ContentView {
     #themeType;
     #timeType;
     #userDataRepresentationId;
+    #interval=null;
 
     static createContentViewFromElement(contentView) {
         const locationType = contentView.dataset.location;
@@ -73,12 +74,12 @@ class ContentView {
             const locations = "locations" in data ? data["locations"] : null;
             const user_data_representation = data["user_data_representation"];
             const data_representation = data["data_representation"];
-            ContentView.createContentViewFromElement(this.#createNewContentViewElement(data_representation, user_data_representation, locations));
+            ContentView.createContentViewFromElement(ContentView.createNewContentViewElement(data_representation, user_data_representation, locations));
 
         }).catch((error) => console.log(error));
     }
 
-    static #createNewContentViewElement(data_representation, user_data_representation, locations) {
+    static createNewContentViewElement(data_representation, user_data_representation, locations) {
         const contentView = contentViewTemplate.cloneNode(true);
         contentView.removeAttribute("id");
         contentView.classList.add("content-view");
@@ -116,7 +117,8 @@ class ContentView {
             contentView.querySelector(".location-input-div").appendChild(locationSelect);
         }
 
-        document.querySelector("#content-div").appendChild(contentView);
+        ContentView.parent.appendChild(contentView);
+
         contentView.scrollIntoView();
         return contentView;
     }
@@ -231,7 +233,10 @@ class ContentView {
         if (locationSelect != null && locationSelect.querySelectorAll("option").length == 0) {
             ContentView.addEmptyOptionToSelect(locationSelect);//TODO add error message
         }
-        this.#fetchDataForContentViewDataDiv();
+        this.fetchDataForContentViewDataDiv();
+        if(this.#timeType == "N"){
+            this.#interval = setInterval(this.fetchDataForContentViewDataDiv.bind(this), 300000);
+        }
 
         ContentView.insort(this);
     }
@@ -295,8 +300,7 @@ class ContentView {
 
     }
 
-    #fetchDataForContentViewDataDiv(updateInputs = false) {
-
+    fetchDataForContentViewDataDiv(updateInputs = false) {
         const loader = this.#contentView.querySelector(".loader"); //TODO add to class
         const dataHolder = this.#contentView.querySelector(".data-holder");//TODO add to class
         if (dataHolder) {
@@ -351,7 +355,7 @@ class ContentView {
     }
 
     onInputChange() {
-        this.#fetchDataForContentViewDataDiv(true);
+        this.fetchDataForContentViewDataDiv(true);
     }
 
     onDragEnd(event) {
@@ -388,6 +392,10 @@ class ContentView {
 
     onDeletionOfView() {
         if (confirm("Sind sie sicher, dass sie diese Datenrepräsentation löschen wollen?")) {
+            if(this.#interval){
+               clearInterval(this.#interval);
+            }
+
             fetch("/delete/user-data-representation", {
                 method: "DELETE",
                 headers: {
@@ -412,6 +420,8 @@ class ContentView {
 
         ContentView.resetOrderForContentViews();
         ContentView.updateOrderOfContentViews();
+
+
     }
 
     // redirect to the download of csv data
