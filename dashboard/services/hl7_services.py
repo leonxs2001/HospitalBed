@@ -39,7 +39,7 @@ def parse_all_hl7_messages():
     # get all hl7 messages from the hl7_files
     hl7_messages = []
     for filename in os.listdir(settings.HL7_DIRECTORY):
-        if filename[-4:] == ".hl7":
+        if filename.endswith(".hl7"):
             new_hl7_messages = get_hl7_message_from_file(filename)
             # insert to the right position in the list (sorted)
             for new_hl7_message in new_hl7_messages:
@@ -47,7 +47,6 @@ def parse_all_hl7_messages():
                               key=lambda msg: msg.segment("MSH")[MSH_MESSAGE_CREATION_FIELD])
 
     for hl7_message in hl7_messages:
-        print(hl7_message.segment("MSH"))
         parse_hl7_message(hl7_message)
 
 
