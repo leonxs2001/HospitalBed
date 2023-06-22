@@ -154,7 +154,7 @@ def parse_update_patient(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe
 
     sex = pid_segment.extract_field(field_num=PID_SEX_FILED)
 
-    hospital_models.Patient.objects.filter(id=patient_id).update(sex=sex, date_of_birth=date_of_birth)
+    hospital_models.Patient.objects.filter(patient_id=patient_id).update(sex=sex, date_of_birth=date_of_birth)
 
     visit_id_string = pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
     visit_id = int(visit_id_string)
