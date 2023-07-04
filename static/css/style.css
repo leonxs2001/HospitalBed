@@ -467,7 +467,7 @@ body {
     }
 }
 
-@media (pointer: coarse) and (orientation: landscape){
+@media (pointer: coarse) and (orientation: landscape) {
 
     .content-view {
         height: 77vh;
@@ -513,5 +513,12 @@ body {
     .occupancy-history-chart-canvas {
         height: 30vh !important;
         margin-top: 6vh;
+    }
+
+    .loader {
+        height: 25vh;
+        width: 25vh;
+        border-width: 2em;
+        border-top-width: 2em;
     }
 }

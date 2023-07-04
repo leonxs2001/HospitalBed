@@ -4,6 +4,7 @@ import io
 from tempfile import SpooledTemporaryFile
 
 from django.http import HttpResponse
+from django.utils import timezone
 
 from dashboard.models.user_models import user_models
 from dashboard.models.hospital_models import hospital_models
@@ -15,7 +16,7 @@ from dashboard.utils import GERMAN_DATE_FORMAT
 
 
 def get_locations_for_time(user_data_representation: user_models.UserDataRepresentation, location_type: str,
-                           time_type: str, now: datetime.datetime):
+                           time_type: str, now: timezone.datetime):
     if location_type != user_models.DataRepresentation.LocationChoices.HOSPITAL:
         location_class = None
         if location_type == user_models.DataRepresentation.LocationChoices.WARD:
@@ -63,7 +64,7 @@ def create_csv_file_response(context, location_type, theme_type, time_type):
             ward = data[0]
             writer.writerow(["Anzahl Betten", "Belegte Betten", "Leere Betten", "Auslastung in %", "Anzahl Maenner",
                             "Anzahl Frauen", "Anzahl Diverse"])
-            writer.writerow([ward.max_number, ward.number, ward.max_number - ward.number, ward.occupancy,
+            writer.writerow([ward.max_number, ward.number, ward.max_number - ward.number, (ward.number / ward.max_number) * 100.0,
                             ward.number_of_men, ward.number_of_women, ward.number_of_diverse])
 
     return response
@@ -96,7 +97,7 @@ def generate_csv_file_name_from_context(context, location_type, theme_type, time
     result += " vom "
 
     if time_type == DataRepresentation.TimeChoices.NEARTIME:
-        result += datetime.datetime.now().strftime(GERMAN_DATE_FORMAT)
+        result += timezone.now().strftime(GERMAN_DATE_FORMAT)
     else:
         result += user_data_representation.time.strftime(GERMAN_DATE_FORMAT)
         if time_type == DataRepresentation.TimeChoices.PERIOD:

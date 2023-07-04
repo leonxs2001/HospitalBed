@@ -7,6 +7,7 @@ import datetime
 
 # from dashboard.models import Patient
 from django.db.models import QuerySet
+from django.utils import timezone
 
 from dashboard.models.hospital_models import hospital_models
 from django.conf import settings
@@ -92,9 +93,9 @@ def parse_hl7_message(hl7_message: hl7.Message):
         elif trigger_event == "A08":
             parse_update_patient(pv1_segment, pid_segment, zbe_segment)
         elif trigger_event == "A11":
-            parse_cancel_admit(pv1_segment, zbe_segment)
+            parse_cancel_admission(pv1_segment, zbe_segment)
         elif trigger_event == "A12":
-            parse_cancel_admit(pv1_segment, zbe_segment)
+            parse_cancel_transfer(pv1_segment, zbe_segment)
         elif trigger_event == "A13":
             parse_cancel_discharge(pv1_segment, zbe_segment)
         elif trigger_event == "A40":
@@ -133,7 +134,7 @@ def parse_cancel_transfer(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
             old_stay.update(end_date=None)
 
 
-def parse_cancel_admit(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
+def parse_cancel_admission(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
     movement_id_string = zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
     movement_id = int(movement_id_string)
     visit_id_string = pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
@@ -150,7 +151,7 @@ def parse_update_patient(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe
     patient_id = int(patient_id_string)
 
     date_of_birth_string = pid_segment.extract_field(field_num=PID_DOB_FIELD)
-    date_of_birth = datetime.datetime.strptime(date_of_birth_string, HL7_DATE_FORMAT).date()
+    date_of_birth = timezone.datetime.strptime(date_of_birth_string, HL7_DATE_FORMAT).date()
 
     sex = pid_segment.extract_field(field_num=PID_SEX_FILED)
 
@@ -166,7 +167,7 @@ def parse_update_patient(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe
 
 def parse_transfer(pv1_segment: hl7.Segment, pid_segment: hl7.Segment, zbe_segment: hl7.Segment):
     start_date_string = zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
-    start_date = datetime.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
+    start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
 
     patient = get_or_create_patient(pid_segment)
     visit = get_or_create_visit(pv1_segment, patient)
@@ -193,10 +194,10 @@ def parse_discharge(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment):
     visit_id = int(visit_id_string)
 
     discharge_date_string = pv1_segment.extract_field(field_num=PV1_DISCHARGE_DATE_FIELD)
-    discharge_date = datetime.datetime.strptime(discharge_date_string, HL7_DATE_TIME_FORMAT)
+    discharge_date = timezone.datetime.strptime(discharge_date_string, HL7_DATE_TIME_FORMAT)
 
     start_date_string = zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
-    start_date = datetime.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
+    start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
 
     # update the visit discharge_date
     hospital_models.Visit.objects.filter(visit_id=visit_id).update(discharge_date=discharge_date)
@@ -218,7 +219,7 @@ def parse_new_visit(pid_segment: hl7.Segment, pv1_segment: hl7.Segment, zbe_segm
                                        component_num=PATIENT_LOCATION_BED_COMPONENT)
     if bed_id:
         start_date_string = zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
-        start_date = datetime.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
+        start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
 
         patient = get_or_create_patient(pid_segment)
         visit = get_or_create_visit(pv1_segment, patient)
@@ -231,7 +232,7 @@ def get_or_create_patient(pid_segment: hl7.Segment):
     patient_id = int(patient_id_string)
 
     date_of_birth_string = pid_segment.extract_field(field_num=PID_DOB_FIELD)
-    date_of_birth = datetime.datetime.strptime(date_of_birth_string, HL7_DATE_FORMAT).date()
+    date_of_birth = timezone.datetime.strptime(date_of_birth_string, HL7_DATE_FORMAT).date()
 
     sex = pid_segment.extract_field(field_num=PID_SEX_FILED)
 
@@ -246,7 +247,7 @@ def get_or_create_visit(pv1_segment: hl7.Segment, patient: hospital_models.Patie
 
     admission_date_string = pv1_segment.extract_field(
         field_num=PV1_ADMISSION_DATE_FIELD)  # is this right, if the patient was not in ward before
-    admission_date = datetime.datetime.strptime(admission_date_string, HL7_DATE_TIME_FORMAT)
+    admission_date = timezone.datetime.strptime(admission_date_string, HL7_DATE_TIME_FORMAT)
 
     return hospital_models.Visit.objects.get_or_create(visit_id=visit_id,
                                                        defaults={"admission_date": admission_date,
@@ -254,7 +255,7 @@ def get_or_create_visit(pv1_segment: hl7.Segment, patient: hospital_models.Patie
 
 
 def get_or_create_ward(pv1_segment: hl7.Segment,
-                       start_date: datetime.datetime):
+                       start_date: timezone.datetime):
     ward_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
                                         component_num=PATIENT_LOCATION_WARD_COMPONENT)
 
@@ -266,7 +267,7 @@ def get_or_create_ward(pv1_segment: hl7.Segment,
 
 
 def get_or_create_room(pv1_segment: hl7.Segment, ward: hospital_models.Ward,
-                       start_date: datetime.datetime):
+                       start_date: timezone.datetime):
     room_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
                                         component_num=PATIENT_LOCATION_ROOM_COMPONENT)
 
@@ -278,7 +279,7 @@ def get_or_create_room(pv1_segment: hl7.Segment, ward: hospital_models.Ward,
 
 
 def get_or_create_bed(pv1_segment: hl7.Segment, room: hospital_models.Room,
-                      start_date: datetime.datetime):
+                      start_date: timezone.datetime):
     bed_id = pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
                                        component_num=PATIENT_LOCATION_BED_COMPONENT)
 
@@ -302,7 +303,7 @@ def get_id_from_patient_location(pv1_segment: hl7.Segment, component_num: int):
 
 
 def create_stay(pv1_segment: hl7.Segment, zbe_segment: hl7.Segment, visit: hospital_models.Visit,
-                start_date: datetime.datetime):
+                start_date: timezone.datetime):
     movement_id_string = zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
     movement_id = int(movement_id_string)
 

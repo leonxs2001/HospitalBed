@@ -18,8 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from dashboard.views.edit_user_data_views import UpdateOrderView, DeleteUserDataRepresentation, \
-    CreateUserDataRepresentationView
+from dashboard.views.edit_user_data_views import ManageUserDataRepresentationView
 from dashboard.views.location_data_views import AllocationView
 from dashboard.views.main_views import DashboardView, create_data_representation, parse_hl7, RegistrationView, \
     LoginView, LogoutView
@@ -33,9 +32,9 @@ urlpatterns = [
     path("logout/", LogoutView.as_view()),
 
 
-    path("update/order", UpdateOrderView.as_view()),
-    path("delete/user-data-representation", DeleteUserDataRepresentation.as_view()),
-    path("create/user-data_representation", CreateUserDataRepresentationView.as_view()),
+    path("update/order", ManageUserDataRepresentationView.as_view()),
+    path("delete/user-data-representation", ManageUserDataRepresentationView.as_view()),
+    path("create/user-data_representation", ManageUserDataRepresentationView.as_view()),
 
     path("create/", create_data_representation),
     path("parse/", parse_hl7),

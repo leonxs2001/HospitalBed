@@ -16,19 +16,14 @@ const loaderTemplate = document.querySelector("#template-div .loader");
 
 const DATETIME_REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/
 
-class ContentView {
-    static draggedContentView;
-    static parent = document.querySelector("#content-div");
-    static contentViews = [];
-    #order;
-    #contentView;
-    #contentDataDiv;
-    #locationType;
-    #themeType;
-    #timeType;
-    #userDataRepresentationId;
-    #interval=null;
+function percentage(value, maxValue){
+    if (value == undefined || maxValue == undefined || maxValue == 0){
+        return 0;
+    }
+    return ((value / maxValue) * 100).toFixed(2);
+}
 
+class ContentViewFactory{
     static createContentViewFromElement(contentView) {
         const locationType = contentView.dataset.location;
         const themeType = contentView.dataset.theme;
@@ -54,6 +49,8 @@ class ContentView {
         const themeType = element.dataset.theme;
         const timeType = element.dataset.time;
 
+        let contentView = null;
+
         fetch("/create/user-data_representation", {
             method: "POST",
             headers: {
@@ -74,10 +71,26 @@ class ContentView {
             const locations = "locations" in data ? data["locations"] : null;
             const user_data_representation = data["user_data_representation"];
             const data_representation = data["data_representation"];
-            ContentView.createContentViewFromElement(ContentView.createNewContentViewElement(data_representation, user_data_representation, locations));
+            contentView = ContentViewFactory.createContentViewFromElement(ContentView.createNewContentViewElement(data_representation, user_data_representation, locations));
 
         }).catch((error) => console.log(error));
+
+        return contentView
     }
+}
+
+class ContentView {
+    static draggedContentView;
+    static parent = document.querySelector("#content-div");
+    static contentViews = [];
+    #order;
+    #contentView;
+    #contentDataDiv;
+    #locationType;
+    #themeType;
+    #timeType;
+    #userDataRepresentationId;
+    #interval = null;
 
     static createNewContentViewElement(data_representation, user_data_representation, locations) {
         const contentView = contentViewTemplate.cloneNode(true);
@@ -234,7 +247,7 @@ class ContentView {
             ContentView.addEmptyOptionToSelect(locationSelect);//TODO add error message
         }
         this.fetchDataForContentViewDataDiv();
-        if(this.#timeType == "N"){
+        if (this.#timeType == "N") {
             this.#interval = setInterval(this.fetchDataForContentViewDataDiv.bind(this), 300000);
         }
 
@@ -289,16 +302,17 @@ class ContentView {
         this.#contentView.addEventListener("drop", ContentView.updateOrderOfContentViews);
         this.#contentView.addEventListener("dragover", this.onDragOver.bind(this))
 
-        this.#contentView.querySelector(".delete-image").addEventListener("click", this.onDeletionOfView.bind(this));
+        this.#contentView.querySelector(".delete-image").addEventListener("click", this.onDeletionOfContentView.bind(this));
         this.#contentView.querySelector(".download-image").addEventListener("click", this.onDownloadDataForView.bind(this));
-        const inputElements = this.#contentView.querySelectorAll(".selection-input, .from-input, .to-input, .time-input");//TODO add to class4
+        let inputElements = this.#contentView.querySelectorAll(".selection-input, .from-input, .to-input, .time-input");//TODO add to class4
         if (inputElements) {
-            inputElements.forEach((inputElement) => {
-                addEventListener("change", this.onInputChange.bind(this));
-            });
+            for (const inputElement of inputElements) {
+                inputElement.addEventListener("change", this.onInputChange.bind(this));
+            }
         }
 
     }
+
 
     fetchDataForContentViewDataDiv(updateInputs = false) {
         const loader = this.#contentView.querySelector(".loader"); //TODO add to class
@@ -329,19 +343,17 @@ class ContentView {
             }
             throw new Error("Request failed.");
         }).then(data => {
-            if (updateInputs) {
+
+
+            if (this.#locationType != "H") {
                 const locations = data.locations;
                 const user_data_representation = data.user_data_representation;
                 const locationSelect = this.#contentView.querySelector(".selection-input");//TODO add to class
-
-                if (this.#locationType != "H") {
-                    //delete all old options
-                    while (locationSelect.options.length > 0) {
-                        locationSelect.remove(0);
-                    }
-                    ContentView.fillLocationSelect(locations, locationSelect, this.#locationType, user_data_representation);
+                //delete all old options
+                while (locationSelect.options.length > 0) {
+                    locationSelect.remove(0);
                 }
-
+                ContentView.fillLocationSelect(locations, locationSelect, this.#locationType, user_data_representation);
             }
 
             this.fillContentViewDataDivWithData(data);
@@ -390,10 +402,10 @@ class ContentView {
         }
     }
 
-    onDeletionOfView() {
+    onDeletionOfContentView() {
         if (confirm("Sind sie sicher, dass sie diese Datenrepräsentation löschen wollen?")) {
-            if(this.#interval){
-               clearInterval(this.#interval);
+            if (this.#interval) {
+                clearInterval(this.#interval);
             }
 
             fetch("/delete/user-data-representation", {
@@ -528,7 +540,7 @@ class RoomInformationContentView extends ContentView {
             ContentView.setRectangleClassAndTextForSex(singleRoomData, sexRectangle, sexSpan);
 
             ageH4.innerText = singleRoomData.average_age;
-            occupancyH4.innerText = singleRoomData.occupancy + "%";
+            occupancyH4.innerText = percentage(singleRoomData.number, singleRoomData.max_number) + "%";
             freeBedsH4.innerText = singleRoomData.max_number - singleRoomData.number;
 
             roomDataDiv.hidden = false;
@@ -544,6 +556,7 @@ class LocationInformationContentView extends ContentView {
     }
 
     fillContentViewDataDivWithData(data) {
+        console.log(data);
         const dataDiv = this.contentView.querySelector(".content-view-data-div");//TODO add to class
         const locationData = data["data"];
         const canvas = dataDiv.querySelector(".information-chart-canvas");
@@ -563,11 +576,11 @@ class LocationInformationContentView extends ContentView {
                 singleLocationData.number_of_diverse,
                 singleLocationData.max_number - singleLocationData.number
             ];
-
+            console.log(percentage(singleLocationData.number, singleLocationData.max_number));
             chart.data.datasets[1].data = [
                 singleLocationData.number,
                 singleLocationData.max_number,
-                singleLocationData.occupancy,
+                percentage(singleLocationData.number, singleLocationData.max_number),
             ];
             canvas.hidden = false;
             canvas.style.display = 'block';
@@ -605,7 +618,7 @@ class LocationInformationContentView extends ContentView {
                         const {ctx} = chart;
                         ctx.save();
                         ctx.fillStyle = "#000000";
-                        ctx.font = `${1.2 * height/290}em Arial`;
+                        ctx.font = `${1.2 * height / 290}em Arial`;
                         ctx.textAlign = "center";
                         ctx.textBaseline = "bottom"
                         ctx.fillText(`${data[0]} / ${data[1]}`, x, y);
@@ -648,7 +661,7 @@ class LocationHistoryContentView extends ContentView {
         const locationHistoryData = data["data"];
         const canvas = dataDiv.querySelector(".occupancy-history-chart-canvas");
 
-        if (!("locations" in data)) {
+        if (!("locations" in data) && this.locationType != "H") {//TODO= better handling
             //TODO show error!
             canvas.hidden = true;
             canvas.style.display = 'none';
@@ -664,8 +677,8 @@ class LocationHistoryContentView extends ContentView {
 
                 const exec_date = DATETIME_REGEX.exec(key);
                 const datetime = new Date(exec_date[1], exec_date[2], exec_date[3], exec_date[4], exec_date[5]);
-                labels.push(`${datetime.getDay()}.${datetime.getMonth()}.${datetime.getFullYear()} ${datetime.getHours()}:${datetime.getMinutes()}`);
-                let occupancy = (value) ? value.occupancy : null;
+                labels.push(`${datetime.getDate()}.${datetime.getMonth()}.${datetime.getFullYear()} ${datetime.getHours()}:${datetime.getMinutes()}`);
+                let occupancy = (value) ? percentage(value.number, value.max_number) : null;
 
                 data.push(occupancy);
 
@@ -771,7 +784,7 @@ class LocationsInformationContentView extends ContentView {
             const chartCanvas = newLocationDiv.querySelector(".location-occupancy-chart-canvas");
 
             nameSpan.innerText = locationData.name;
-            occupancySpan.innerText = locationData.occupancy + "%";
+            occupancySpan.innerText = percentage(locationData.number, locationData.max_number) + "%";
 
             new Chart(chartCanvas, {
                 type: 'bar',
@@ -821,13 +834,13 @@ window.addEventListener("load", () => {
     const newViewSelects = document.querySelectorAll(".selection.time");
     if (newViewSelects) {
         newViewSelects.forEach((newViewSelect) => {
-            newViewSelect.addEventListener("click", ContentView.createNewContentViewFromEvent);//onNewViewSelection);
+            newViewSelect.addEventListener("click", ContentViewFactory.createNewContentViewFromEvent);//onNewViewSelection);
         });
     }
 
     const contentViews = document.querySelectorAll('.content-view');
     contentViews.forEach((contentView) => {
-        ContentView.createContentViewFromElement(contentView)
+        ContentViewFactory.createContentViewFromElement(contentView)
     });
 });
 

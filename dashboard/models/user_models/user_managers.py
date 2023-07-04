@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from dashboard.models.hospital_models import hospital_models
 from dashboard.models.user_models import user_models
@@ -42,10 +43,10 @@ class UserDataRepresentationManager(models.Manager):
         room = None
         # TODO was wenn nichts gegeben, weil leer? --> beim get?
         if data_representation.time_type == user_models.DataRepresentation.TimeChoices.TIME:
-            time = datetime.datetime.now()
+            time = timezone.now()
         elif data_representation.time_type == user_models.DataRepresentation.TimeChoices.PERIOD:
-            time = datetime.datetime.now() - datetime.timedelta(weeks=4)
-            end_time = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+            time = timezone.now() - datetime.timedelta(weeks=4)
+            end_time = timezone.now()
 
         if data_representation.location_type == user_models.DataRepresentation.LocationChoices.WARD:
             ward = hospital_models.Ward.objects.first()

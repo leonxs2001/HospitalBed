@@ -1,5 +1,4 @@
 from django.db import models
-
 from dashboard.models.hospital_models import hopital_query_sets
 
 
@@ -22,7 +21,7 @@ class Visit(models.Model):
     patient = models.ForeignKey(Patient, models.CASCADE)
 
 
-class LocationMixin(models.Model):
+class Location(models.Model):
     id = models.CharField(primary_key=True, max_length=32)
     name = models.CharField(max_length=32)
     date_of_activation = models.DateTimeField()
@@ -34,20 +33,24 @@ class LocationMixin(models.Model):
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._get_pk_val() == other._get_pk_val()
 
+    def __hash__(self):
+        return hash(self.id)
 
-class Ward(LocationMixin):
+
+class Ward(Location):
     objects = hopital_query_sets.WardQuerySet.as_manager()
 
 
-class Room(LocationMixin):
+class Room(Location):
     objects = hopital_query_sets.RoomQuerySet.as_manager()
-    ward = models.ForeignKey(Ward,models.CASCADE)
+    ward = models.ForeignKey(Ward, models.CASCADE)
 
 
-class Bed(LocationMixin):
+class Bed(Location):
     objects = hopital_query_sets.BedQuerySet.as_manager()
     hospital_objects = hopital_query_sets.HospitalBedQuerySet.as_manager()
-    room = models.ForeignKey(Room,models.CASCADE)
+
+    room = models.ForeignKey(Room, models.CASCADE)
 
 
 class Stay(models.Model):
@@ -55,13 +58,13 @@ class Stay(models.Model):
     end_date = models.DateTimeField(null=True)
     movement_id = models.IntegerField()
 
-    visit = models.ForeignKey(Visit,models.CASCADE)
-    bed = models.ForeignKey(Bed,models.CASCADE)
-    ward = models.ForeignKey(Ward,models.CASCADE)
-    room = models.ForeignKey(Room,models.CASCADE)
+    visit = models.ForeignKey(Visit, models.CASCADE)
+    bed = models.ForeignKey(Bed, models.CASCADE)
+    ward = models.ForeignKey(Ward, models.CASCADE)
+    room = models.ForeignKey(Room, models.CASCADE)
 
 
 class Discharge(models.Model):
     movement_id = models.IntegerField()
 
-    stay = models.ForeignKey(Stay,models.CASCADE)
+    stay = models.ForeignKey(Stay, models.CASCADE)

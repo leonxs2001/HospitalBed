@@ -43,6 +43,7 @@ class DataRepresentation(models.Model):
 
 class User(AbstractBaseUser):
     objects = UserManager()
+
     username = models.CharField(max_length=32, unique=True)
 
     data_representations = models.ManyToManyField(DataRepresentation, through="UserDataRepresentation")

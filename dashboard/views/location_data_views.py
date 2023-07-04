@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import Manager
 from django.http import JsonResponse, FileResponse, HttpResponse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 
@@ -24,7 +25,7 @@ class LocationDataResponseView(View, ABC):
     time_type = ""
 
     def get(self, request):
-        now = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+        now = timezone.now()
 
         user_data_representation = user_models.UserDataRepresentation.objects.get(id=request.GET["id"])
         locations = None
@@ -34,11 +35,11 @@ class LocationDataResponseView(View, ABC):
 
             if self.time_type == user_models.DataRepresentation.TimeChoices.TIME:
                 changed = True
-                user_data_representation.time = datetime.datetime.strptime(request.GET["time"], DATE_FORMAT)
+                user_data_representation.time = timezone.datetime.strptime(request.GET["time"], DATE_FORMAT)
             elif self.time_type == user_models.DataRepresentation.TimeChoices.PERIOD:
                 changed = True
-                user_data_representation.time = datetime.datetime.strptime(request.GET["time"], DATE_FORMAT)
-                user_data_representation.end_time = datetime.datetime.strptime(request.GET["end_time"], DATE_FORMAT)
+                user_data_representation.time = timezone.datetime.strptime(request.GET["time"], DATE_FORMAT)
+                user_data_representation.end_time = timezone.datetime.strptime(request.GET["end_time"], DATE_FORMAT)
 
             locations = get_locations_for_time(user_data_representation, self.location_type, self.time_type, now)
 
@@ -64,7 +65,7 @@ class LocationDataResponseView(View, ABC):
                     set_new_user_data_representation_location(user_data_representation, self.location_type)
                     user_data_representation.save()
 
-        context = self.get_context(request, user_data_representation)
+        context = self.get_context(user_data_representation)
         context["user_data_representation"] = user_models.UserDataRepresentation.objects.get(id=request.GET["id"])
 
         if request.GET["download"] == "true":
@@ -80,53 +81,51 @@ class LocationDataResponseView(View, ABC):
             return JsonResponse(context, ModelJSONEncoder)
 
     @abstractmethod
-    def get_context(self, request, user_data_representation):
+    def get_context(self, user_data_representation):
         pass
 
 
 class LocationInformationView(LocationDataResponseView, ABC):
 
-    def get_context(self, request, user_data_representation: user_models.UserDataRepresentation):
+    def get_context(self, user_data_representation: user_models.UserDataRepresentation):
 
-        now = datetime.datetime.now(tz=ZoneInfo(settings.TIME_ZONE))
+        now = timezone.now()
 
-        query_set = self.get_query_set(request, user_data_representation)
+        query_set = self.get_query_set(user_data_representation)
         context = dict()
 
         if self.time_type == user_models.DataRepresentation.TimeChoices.PERIOD:
-            start = datetime.datetime.strptime(request.GET["time"], DATE_FORMAT)
-            end = datetime.datetime.strptime(request.GET["end_time"], DATE_FORMAT)
-            context["data"] = query_set.information_for_period(start, end)
+            context["data"] = query_set.information_for_period(user_data_representation.time,
+                                                               user_data_representation.end_time)
         elif self.time_type == user_models.DataRepresentation.TimeChoices.TIME:
-            time = datetime.datetime.strptime(request.GET["time"], DATE_FORMAT)
-            context["data"] = query_set.information_for_time(time)
+            context["data"] = query_set.information_for_time(user_data_representation.time)
         else:
             context["data"] = query_set.information_for_time(now)
 
         return context
 
     @abstractmethod
-    def get_query_set(self, request, user_data_representation):
+    def get_query_set(self, user_data_representation):
         pass
 
 
 class SingleLocationInformationView(LocationInformationView):
     location_manager: Manager = None  # TODO exception, if none in child class
 
-    def get_query_set(self, request, user_data_representation):
+    def get_query_set(self, user_data_representation):
         location_id = user_data_representation.location_id
         return self.location_manager.filter_for_id(location_id)
 
 
 class HospitalInformationView(LocationInformationView):
-    def get_query_set(self, request, user_data_representation):
+    def get_query_set(self, user_data_representation):
         return hospital_models.Bed.hospital_objects.all()
 
 
 class MultipleLocationsInformationView(LocationInformationView):
     location_manager: Manager = None  # TODO exception, if none in child class
 
-    def get_query_set(self, request, user_data_representation):
+    def get_query_set(self, user_data_representation):
 
         if self.location_type == user_models.DataRepresentation.LocationChoices.HOSPITAL:
             return self.location_manager.all()
@@ -140,12 +139,12 @@ class MultipleLocationsInformationView(LocationInformationView):
 
 class LocationHistoryView(LocationDataResponseView, ABC):
 
-    def get_context(self, request, user_data_representation: user_models.UserDataRepresentation):
+    def get_context(self, user_data_representation: user_models.UserDataRepresentation):
         context = dict()
         start = user_data_representation.time
         end = user_data_representation.end_time
 
-        query_set = self.get_query_set(request)
+        query_set = self.get_query_set(user_data_representation)
 
         for time in (start + ((end - start) / 9) * n for n in range(10)):
             context[time.strftime(DATE_FORMAT)] = query_set.occupancy_for_time(time)
@@ -153,19 +152,20 @@ class LocationHistoryView(LocationDataResponseView, ABC):
         return {"data": context}
 
     @abstractmethod
-    def get_query_set(self, request):
+    def get_query_set(self, user_data_representation):
         pass
 
 
 class SingleLocationHistoryView(LocationHistoryView):
     location_manager: Manager = None
 
-    def get_query_set(self, request):
-        return self.location_manager.filter_for_id(request.GET["location_id"])
+    def get_query_set(self, user_data_representation):
+        location_id = user_data_representation.location_id
+        return self.location_manager.filter_for_id(location_id)
 
 
 class HospitalHistoryView(LocationHistoryView):
-    def get_query_set(self, request):
+    def get_query_set(self, user_data_representation):
         return hospital_models.Bed.hospital_objects.all()
 
 

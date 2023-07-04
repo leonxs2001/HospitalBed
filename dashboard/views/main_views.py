@@ -6,6 +6,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
@@ -78,7 +79,14 @@ class RegistrationView(View):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('login')
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password1')
+
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('home')
+            return redirect("login")
 
 
 class LoginView(View):
@@ -123,7 +131,7 @@ class DashboardView(TemplateView):
 
         context["wards"] = hospital_models.Ward.objects.all()
         context["rooms"] = hospital_models.Room.objects.all()
-        context["now"] = datetime.datetime.now(datetime.timezone.utc)
+        context["now"] = timezone.now()
 
         context[
             "structured_data_representations"] = user_models.DataRepresentation.objects.structured_data_representations()

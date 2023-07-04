@@ -19,7 +19,7 @@ from django.contrib.staticfiles.views import serve
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # hl7 directory with all the files
-HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/hl7_nachrichten"
+HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/Von echt/Leons_hl7"
 
 #rfc stuff
 ASHOST = 'sbb243.sbb.dom'
