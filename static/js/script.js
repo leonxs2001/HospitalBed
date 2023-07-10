@@ -541,7 +541,7 @@ class RoomInformationContentView extends ContentView {
 
             ageH4.innerText = singleRoomData.average_age;
             occupancyH4.innerText = percentage(singleRoomData.number, singleRoomData.max_number) + "%";
-            freeBedsH4.innerText = singleRoomData.max_number - singleRoomData.number;
+            freeBedsH4.innerText = `${singleRoomData.max_number - singleRoomData.number} von ${singleRoomData.max_number}`;
 
             roomDataDiv.hidden = false;
             roomDataDiv.style.display = 'flex';
@@ -740,6 +740,7 @@ class BedsInformationContentView extends ContentView {
         const dataDiv = this.contentView.querySelector(".content-view-data-div");//TODO add to class
         const bedsData = data["data"];
         const bedListDiv = dataDiv.querySelector(".location-list-div");
+        console.log(bedsData);
 
         bedsData.forEach(bedData => {
             const newBedDiv = bedDivTemplate.cloneNode(true);

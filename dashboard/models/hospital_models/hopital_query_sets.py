@@ -11,21 +11,19 @@ from dashboard.models.hospital_models import hospital_models
 
 class SexAnnotationQuerySetMixin(models.QuerySet, ABC):
 
-
-
     def sex_annotation(self, time):
-        stay_filter = models.Q(start_date__lt=time) & (models.Q(end_date__isnull=True) | models.Q(end_date__gt=time))
+        stay_filter = models.Q(date_of_activation__lt=time) & (models.Q(date_of_expiry__isnull=True) | models.Q(date_of_expiry__gt=time))
         number_of_men = models.Count("stay", distinct=True,
-                                     filter=models.Q(stay__visit__patient__sex="M"))
+                                     filter=models.Q(stay__visit__patient__sex="M") & stay_filter)
         number_of_women = models.Count("stay", distinct=True,
-                                       filter=models.Q(stay__visit__patient__sex="F"))
+                                       filter=models.Q(stay__visit__patient__sex="F") & stay_filter)
         number_of_diverse = models.Count("stay", distinct=True,
                                          filter=models.Q(
-                                             stay__visit__patient__sex="D"))
+                                             stay__visit__patient__sex="D") & stay_filter)
         return self.annotate(  # TODO hier auch
-            number_of_diverse=self.number_of_diverse,
-            number_of_men=self.number_of_men,
-            number_of_women=self.number_of_women
+            number_of_diverse=number_of_diverse,
+            number_of_men=number_of_men,
+            number_of_women=number_of_women
         )
 
     def sex_over_period_annotation(self, start: timezone.datetime, end: timezone.datetime):
@@ -86,17 +84,14 @@ class AgeAnnotationQuerySetMixin(models.QuerySet, ABC):
             models.Q(id__in=models.OuterRef("stay__id")) &
             models.Q(start_date__lt=time) & (models.Q(end_date__isnull=True) | models.Q(end_date__gt=time))
         ).annotate(
-            age=functions.Coalesce(
-                age_in_years - functions.Cast(
-                    models.Q(visit__patient__date_of_birth__month__gt=current_month) | models.Q(
-                        visit__patient__date_of_birth__month=current_month) & models.Q(
-                        visit__patient__date_of_birth__day__gt=current_day),
-                    output_field=models.IntegerField()
-                ),
-                0
+            age=age_in_years - functions.Cast(
+                models.Q(visit__patient__date_of_birth__month__gt=current_month) | models.Q(
+                    visit__patient__date_of_birth__month=current_month) & models.Q(
+                    visit__patient__date_of_birth__day__gt=current_day),
+                output_field=models.IntegerField()
             )
         ).annotate(average_age=models.Func(models.F("age"), function="Avg")).values("average_age")
-        return self.annotate(average_age=models.Subquery(average_age)).exclude(average_age = None)
+        return self.annotate(average_age=models.Subquery(average_age)).exclude(average_age=None)
 
     def age_over_period_annotation(self, start: datetime, end: datetime):
         stay_period_filter = (models.Q(end_date=None, start_date__lt=end) |
@@ -308,7 +303,7 @@ class BedQuerySet(LocationInformationQuerySetMixin, LocationFilterQuerySetMixin,
         return self.sex_over_period_annotation(start, end).age_over_period_annotation(start, end)
 
 
-class HospitalBedQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMixin):
+class HospitalBedQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQuerySetMixin, SexAnnotationQuerySetMixin):
     def all(self):
         return super(HospitalBedQuerySet, self).all()
 
@@ -316,10 +311,13 @@ class HospitalBedQuerySet(LocationInformationQuerySetMixin, LocationOccupancyQue
         number = models.Count('stay', distinct=True,
                               filter=models.Q(stay__start_date__lt=time) & (
                                       models.Q(stay__end_date=None) | models.Q(stay__end_date__gt=time)))
+        query_set = self.sex_annotation(time)
+        test = [e for e in query_set]
 
-        return self.distinct().aggregate(number_of_diverse=SexAnnotationQuerySetMixin.number_of_diverse,
-                                         number_of_men=SexAnnotationQuerySetMixin.number_of_men,
-                                         number_of_women=SexAnnotationQuerySetMixin.number_of_women,
+
+        return query_set.aggregate(number_of_diverse=models.Sum("number_of_diverse"),
+                                         number_of_men=models.Sum("number_of_men"),
+                                         number_of_women=models.Sum("number_of_women"),
                                          number=number,
                                          max_number=models.Count("id", distinct=True))
 
