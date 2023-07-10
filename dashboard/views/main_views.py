@@ -14,7 +14,10 @@ from django.views.generic import TemplateView
 from dashboard.models import User
 from dashboard.models.user_models import user_models
 from dashboard.models.hospital_models import hospital_models
-from dashboard.services.hl7_services import parse_all_hl7_messages
+
+from django.conf import settings
+
+from dashboard.services.hl7_services import Hl7MessageParser
 
 
 def create_data_representation(request):
@@ -40,6 +43,7 @@ def create_data_representation(request):
 
     user_models.DataRepresentation.objects.create(location_type="H", theme_type="B", time_type="T")
     user_models.DataRepresentation.objects.create(location_type="H", theme_type="B", time_type="N")
+    user_models.DataRepresentation.objects.create(location_type="H", theme_type="B", time_type="P")
 
     user_models.DataRepresentation.objects.create(location_type="W", theme_type="R", time_type="T")
     user_models.DataRepresentation.objects.create(location_type="W", theme_type="R", time_type="N")
@@ -47,9 +51,11 @@ def create_data_representation(request):
 
     user_models.DataRepresentation.objects.create(location_type="W", theme_type="B", time_type="T")
     user_models.DataRepresentation.objects.create(location_type="W", theme_type="B", time_type="N")
+    user_models.DataRepresentation.objects.create(location_type="W", theme_type="B", time_type="P")
 
     user_models.DataRepresentation.objects.create(location_type="R", theme_type="B", time_type="T")
     user_models.DataRepresentation.objects.create(location_type="R", theme_type="B", time_type="N")
+    user_models.DataRepresentation.objects.create(location_type="R", theme_type="B", time_type="P")
 
     user_models.DataRepresentation.objects.create(location_type="H", theme_type="H", time_type="P")
     user_models.DataRepresentation.objects.create(location_type="W", theme_type="H", time_type="P")
@@ -59,7 +65,7 @@ def create_data_representation(request):
 
 
 def parse_hl7(request):
-    parse_all_hl7_messages()
+    Hl7MessageParser.parse_hl7_message_from_directory(settings.HL7_DIRECTORY)
     return HttpResponse()
 
 

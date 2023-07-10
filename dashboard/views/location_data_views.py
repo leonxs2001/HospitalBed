@@ -92,6 +92,7 @@ class LocationInformationView(LocationDataResponseView, ABC):
         now = timezone.now()
 
         query_set = self.get_query_set(user_data_representation)
+
         context = dict()
 
         if self.time_type == user_models.DataRepresentation.TimeChoices.PERIOD:
