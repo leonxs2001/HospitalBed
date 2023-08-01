@@ -5,9 +5,11 @@ from pyrfc import Connection, ABAPApplicationError, ABAPRuntimeError, LogonError
 from django.conf import settings
 from django.db.utils import IntegrityError
 
-from dashboard.models.hospital_models import hospital_models
+from dashboard.models import Ward, Room
+from dashboard.models.hospital_models import Bed
 
 SAP_RFC_DATE_FORMAT = "%Y%m%d"
+
 
 class RFCLocationParser:
     @classmethod
@@ -33,31 +35,28 @@ class RFCLocationParser:
             if not ward_name:
                 ward_name = ward_id
 
-            hospital_models.Ward.objects.update_or_create(
+            Ward.objects.update_or_create(
                 id=ward_id,
                 defaults={
-                    "name": ward_name,  # TODO überprüfen
+                    "name": ward_name,
                     "date_of_activation": timezone.datetime.strptime(ward_dict["BEGDT"], SAP_RFC_DATE_FORMAT),
                     "date_of_expiry": timezone.datetime.strptime(ward_dict["ENDDT"], SAP_RFC_DATE_FORMAT)
                 })
 
-        hospital_models.Ward.objects.exclude(id__in=ward_ids).delete()
+        Ward.objects.exclude(id__in=ward_ids).delete()
 
     @classmethod
     def parse_rooms(cls, room_dicts):
         room_ids = []
 
         for room_dict in room_dicts:
-
             room_id = room_dict["ZIMMERID"]
             room_ids.append(room_id)
-
             room_name = room_dict["ZIMMERNAME"]
             if not room_name:
                 room_name = room_id
-
             try:
-                hospital_models.Room.objects.update_or_create(
+                Room.objects.update_or_create(
                     id=room_id,
                     defaults={
                         "name": room_name,
@@ -66,9 +65,8 @@ class RFCLocationParser:
                         "date_of_expiry": timezone.datetime.strptime(room_dict["ENDDT"], SAP_RFC_DATE_FORMAT)
                     })
             except IntegrityError:
-                print("Fehler")  # TODO handle
-
-        hospital_models.Room.objects.exclude(id__in=room_ids).delete()
+                pass
+        Room.objects.exclude(id__in=room_ids).delete()
 
     @classmethod
     def parse_beds(cls, bed_dicts):
@@ -83,7 +81,7 @@ class RFCLocationParser:
                 bed_name = bed_id
 
             try:
-                hospital_models.Bed.objects.update_or_create(
+                Bed.objects.update_or_create(
                     id=bed_id,
                     defaults={
                         "name": bed_name,
@@ -92,9 +90,6 @@ class RFCLocationParser:
                         "date_of_expiry": timezone.datetime.strptime(bed_dict["ENDDT"], SAP_RFC_DATE_FORMAT)
                     })
             except IntegrityError:
-                print("Fehler")  # TODO handle
+                pass
 
-        hospital_models.Bed.objects.exclude(id__in=bed_ids).delete()
-
-
-
+        Bed.objects.exclude(id__in=bed_ids).delete()

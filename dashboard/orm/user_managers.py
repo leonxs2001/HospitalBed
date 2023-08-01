@@ -5,12 +5,14 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from dashboard.models.hospital_models import hospital_models
-from dashboard.models.user_models import user_models
+from dashboard.models import hospital_models
+from dashboard.models import user_models
+
 
 class UserManager(models.Manager):
     def get_by_natural_key(self, username):
         return self.get(username=username)
+
 
 class DataRepresentationManager(models.Manager):
     def structured_data_representations(self):
@@ -53,7 +55,8 @@ class UserDataRepresentationManager(models.Manager):
         elif data_representation.location_type == user_models.DataRepresentation.LocationChoices.ROOM:
             room = hospital_models.Room.objects.first()
 
-        max_order = max_order = user_models.UserDataRepresentation.objects.aggregate(max_order=models.Max('order'))['max_order']
+        max_order = max_order = user_models.UserDataRepresentation.objects.aggregate(max_order=models.Max('order'))[
+            'max_order']
         new_order = 0
         if max_order != None:
             new_order = max_order + 1
@@ -61,4 +64,3 @@ class UserDataRepresentationManager(models.Manager):
         return self.create(time=time, end_time=end_time, order=new_order,
                            user=user, data_representation=data_representation,
                            ward=ward, room=room)
-

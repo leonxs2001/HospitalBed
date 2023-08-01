@@ -145,10 +145,6 @@ body {
     overflow: hidden;
 }
 
-.dragged-content-view {
-    background: #e6e6e6ea;
-}
-
 .delete-div {
     height: 8%;
     width: 98%;

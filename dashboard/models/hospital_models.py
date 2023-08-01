@@ -1,5 +1,6 @@
 from django.db import models
-from dashboard.models.hospital_models import hopital_query_sets
+
+from dashboard.orm import hopital_query_sets
 
 
 class Patient(models.Model):
@@ -46,6 +47,7 @@ class Room(Location):
     ward = models.ForeignKey(Ward, models.CASCADE)
 
 
+
 class Bed(Location):
     objects = hopital_query_sets.BedQuerySet.as_manager()
     hospital_objects = hopital_query_sets.HospitalBedQuerySet.as_manager()
@@ -67,4 +69,4 @@ class Stay(models.Model):
 class Discharge(models.Model):
     movement_id = models.IntegerField()
 
-    stay = models.ForeignKey(Stay, models.CASCADE)
+    stay = models.OneToOneField(Stay, models.CASCADE)

@@ -15,13 +15,12 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from django.contrib.staticfiles.views import serve
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # hl7 directory with all the files
 HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/Von echt/Leons_hl7"
 
-#rfc stuff
+# rfc stuff
 ASHOST = 'sbb243.sbb.dom'
 CLIENT = '003'
 SYSNR = '00'
@@ -39,7 +38,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -49,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_apscheduler',
     'dashboard',
 ]
 
@@ -82,7 +81,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'HospitalBed.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -119,7 +117,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -131,13 +128,12 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
 
-STATICFILES_DIRS = ((os.path.join(BASE_DIR, 'static')), )
+STATICFILES_DIRS = ((os.path.join(BASE_DIR, 'static')),)
 
 MIME_TYPES = {
     '.js': 'application/javascript',

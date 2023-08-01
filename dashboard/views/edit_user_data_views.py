@@ -10,12 +10,12 @@ from django.views import View
 
 import json
 
-from dashboard.models.user_models.user_models import UserDataRepresentation, DataRepresentation, User
-from dashboard.services.view_service import get_locations_for_time
+from dashboard.models import DataRepresentation, UserDataRepresentation
 from dashboard.utils import ModelJSONEncoder
 
 
 class ManageUserDataRepresentationView(View):
+
     @method_decorator(login_required)
     def post(self, request):
         data = json.loads(request.body.decode("utf-8"))
@@ -30,14 +30,12 @@ class ManageUserDataRepresentationView(View):
 
         user_data_representation = UserDataRepresentation.objects.create_user_data_representation(data_representation,
                                                                                                   user)
-
         context = {
             "user_data_representation": user_data_representation,
             "data_representation": data_representation
         }
 
-        locations = get_locations_for_time(user_data_representation, location_type, time_type,
-                                           timezone.now())
+        locations = user_data_representation.locations
         if locations:
             context["locations"] = locations
 
@@ -46,8 +44,7 @@ class ManageUserDataRepresentationView(View):
     @method_decorator(login_required)
     def delete(self, request):
         data = json.loads(request.body.decode("utf-8"))
-        #TODO check if exists for user
-        UserDataRepresentation.objects.filter(id=int(data["id"])).delete()
+        UserDataRepresentation.objects.filter(id=int(data["id"]), user=request.user).delete()
 
         return HttpResponse(status=200)
 
@@ -56,6 +53,6 @@ class ManageUserDataRepresentationView(View):
         data = json.loads(request.body.decode("utf-8"))
 
         # update all
-        for date in data:  # TODO check if its the right user
-            UserDataRepresentation.objects.filter(id=int(date["id"])).update(order=int(date["order"]))
+        for date in data:
+            UserDataRepresentation.objects.filter(id=int(date["id"]), user=request.user).update(order=int(date["order"]))
         return HttpResponse(status=200)

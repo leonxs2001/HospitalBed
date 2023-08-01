@@ -11,6 +11,12 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
+from HospitalBed import apscheduler, initial_data
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HospitalBed.settings')
 
 application = get_wsgi_application()
+
+initial_data.initialize()
+apscheduler.start()
+
