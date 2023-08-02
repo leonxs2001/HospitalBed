@@ -52,31 +52,48 @@ class SexAnnotationQuerySet(models.QuerySet):
                               models.Q(stay__start_date__lt=start, stay__end_date__gt=start) |
                               models.Q(stay__start_date__lt=end, stay__end_date__gt=end))
 
-        return self.annotate(  # stay muss in dem bereich liegen also rein in filter
-            number_of_men=models.Sum(
+        return self.alias(
+            number_of_men_micros=models.Sum(
                 models.Case(
                     models.When(models.Q(
                         stay__visit__patient__sex=hospital_models.Patient.SexChoices.MALE) & stay_period_filter,
                                 then=micro_seconds),
                     default=models.Value(0)
                 ),
-            ) / micro_duration,
-            number_of_women=models.Sum(
+            ),
+            number_of_women_micros=models.Sum(
                 models.Case(
                     models.When(models.Q(
                         stay__visit__patient__sex=hospital_models.Patient.SexChoices.FEMALE) & stay_period_filter,
                                 then=micro_seconds),
                     default=models.Value(0)
                 ),
-            ) / micro_duration,
-            number_of_diverse=models.Sum(
+            ),
+            number_of_diverse_micros=models.Sum(
                 models.Case(
                     models.When(models.Q(
                         stay__visit__patient__sex=hospital_models.Patient.SexChoices.DIVERSE) & stay_period_filter,
                                 then=micro_seconds),
                     default=models.Value(0)
                 ),
-            ) / micro_duration
+            ),
+            total_micros=models.F("number_of_men_micros") +
+                         models.F("number_of_women_micros") +
+                         models.F("number_of_diverse_micros")
+
+        ).annotate(
+            number_of_men=functions.Coalesce(
+                models.F("number_of_men_micros") / models.F("total_micros"),
+                0
+            ),
+            number_of_women=functions.Coalesce(
+                models.F("number_of_women_micros") / models.F("total_micros"),
+                0
+            ),
+            number_of_diverse=functions.Coalesce(
+                models.F("number_of_diverse_micros") / models.F("total_micros"),
+                0
+            ),
         )
 
 
