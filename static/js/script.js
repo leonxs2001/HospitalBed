@@ -126,6 +126,21 @@ class ContentViewManager {
         return contentView;
     }
 
+    fillLocationSelect(locations, locationSelect, locationType, user_data_representation) {
+        locations.forEach((location) => {
+            const newOption = document.createElement("option");
+            const locationId = location["id"];
+            newOption.value = locationId;
+            newOption.innerText = location["name"];
+
+            locationSelect.appendChild(newOption);
+
+            if (locationType == "W" && locationId == user_data_representation["ward"] || locationType == "R" && locationId == user_data_representation["room"]) {
+                locationSelect.value = locationId;
+            }
+        });
+    }
+
     ondDragStart(contentView) {
         this.#draggedContentView = contentView;
     }
@@ -253,9 +268,9 @@ class ContentView {
         this.#setContentViewHeading();
         this.#addEventListeners();
         const locationSelect = this.#contentView.querySelector(".selection-input");//TODO add to class
-        if (locationSelect != null && locationSelect.querySelectorAll("option").length == 0) {
+        /*if (locationSelect != null && locationSelect.querySelectorAll("option").length == 0) {
             this.contentViewManager.addEmptyOptionToSelect(locationSelect);
-        }
+        }*/
         this.fetchDataForContentView();
         if (this.#timeType == "N") {
             this.#interval = setInterval(this.fetchDataForContentView.bind(this), 300000);
@@ -362,18 +377,7 @@ class ContentView {
                 }
                 // fill the select with the locations
                 if (locations != null && locations.length != 0) {
-                    locations.forEach((location) => {
-                        const newOption = document.createElement("option");
-                        const locationId = location["id"];
-                        newOption.value = locationId;
-                        newOption.innerText = location["name"];
-
-                        locationSelect.appendChild(newOption);
-
-                        if (this.#locationType == "W" && locationId == user_data_representation["ward"] || this.#locationType == "R" && locationId == user_data_representation["room"]) {
-                            locationSelect.value = locationId;
-                        }
-                    });
+                    this.#contentViewManager.fillLocationSelect(locations, locationSelect, this.#locationType, user_data_representation)
                 } else {
 
                     this.contentViewManager.addEmptyOptionToSelect(locationSelect);
@@ -402,7 +406,7 @@ class ContentView {
         this.#contentViewManager.onDragEnter(this);
     }
 
-    onDrop(){
+    onDrop() {
         this.#contentViewManager.updateOrder();
     }
 

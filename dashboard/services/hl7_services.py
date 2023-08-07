@@ -187,6 +187,19 @@ class DischargeHl7Message(Hl7Message):
 
 class UpdateHl7Message(Hl7Message):
     def parse_message(self):
+        visit_id_string = self._pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
+        visit_id = int(visit_id_string)
+
+        # handle Message also like a transfer if there are no open stays
+        if not Stay.objects.filter(visit_id=visit_id, end_date=None).exists():
+            patient = self._get_or_create_patient()
+            visit = self._get_or_create_visit(patient)
+            # only create the new stay, if there is a given bed id
+            bed_id = self._pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
+                                                     component_num=PATIENT_LOCATION_BED_COMPONENT)
+            if bed_id:
+                self._create_stay(visit)
+
         patient_id_string = self._pid_segment.extract_field(field_num=PID_PATIENT_ID_FIELD)
         patient_id = int(patient_id_string)
 
@@ -196,6 +209,8 @@ class UpdateHl7Message(Hl7Message):
         sex = self._pid_segment.extract_field(field_num=PID_SEX_FILED)
 
         Patient.objects.filter(patient_id=patient_id).update(sex=sex, date_of_birth=date_of_birth)
+
+
 
 
 class CancelAdmissionHl7Message(Hl7Message):
@@ -291,18 +306,13 @@ class Hl7MessageParser:
         trigger_event = hl7_message.segment("MSH").extract_field(field_num=MSH_MESSAGE_TYPE_FIELD,
                                                                  component_num=MESSAGE_TYPE_TRIGGER_EVENT_COMPONENT)
         if message_type == "ADT":
-            if trigger_event == "A01":  # TODO in Bachelorarbeit mit nennen! Alles noch einmal überprüfen
-                return AdmissionHl7Message(hl7_message)  # sinnvoll?
+            if trigger_event == "A01":
+                return AdmissionHl7Message(hl7_message)
             elif trigger_event == "A02":
                 return TransferHl7Message(hl7_message)
             elif trigger_event == "A03" or trigger_event == "A07":
                 return DischargeHl7Message(hl7_message)
             elif trigger_event == "A08":
-                visit_id_string = hl7_message.segment("PV1").extract_field(field_num=PV1_VISIT_ID_FIELD)
-                visit_id = int(visit_id_string)
-                # handle like a transfer if there are only closed stays
-                if not Stay.objects.filter(visit_id=visit_id, end_date=None).exists():
-                    return TransferHl7Message(hl7_message)
                 return UpdateHl7Message(hl7_message)
             elif trigger_event == "A11":
                 return CancelAdmissionHl7Message(hl7_message)

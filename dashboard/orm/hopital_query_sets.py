@@ -30,7 +30,6 @@ class SexAnnotationQuerySet(models.QuerySet):
         )
 
     def sex_over_period_annotation(self, start: datetime.datetime, end: datetime.datetime):
-        micro_duration = (end - start).total_seconds() * 1000000
         micro_seconds = models.ExpressionWrapper(
             models.Case(
                 expressions.When(models.Q(stay__end_date=None) | models.Q(stay__end_date__gt=end),
@@ -136,6 +135,10 @@ class AgeAnnotationQuerySet(models.QuerySet):
                                  then=models.Value(end, output_field=models.DateTimeField())),
                 default=models.F("end_date")
             ),
+            micro_seconds=models.ExpressionWrapper(
+                models.F("adjusted_end_date") - models.F("adjusted_start_date"),
+                output_field=models.BigIntegerField()
+            )
         ).alias(
             average_time=functions.Cast(
                 models.F("adjusted_start_date") +
@@ -152,16 +155,16 @@ class AgeAnnotationQuerySet(models.QuerySet):
                 output_field=models.DateTimeField()
             ),
         ).annotate(
-            age=models.F("average_time__year") - models.F("visit__patient__date_of_birth__year")
+            age_micros=models.F("average_time__year") - models.F("visit__patient__date_of_birth__year")
                 - functions.Cast(
                 models.Q(visit__patient__date_of_birth__month__gt=models.F("average_time__month")) | models.Q(
                     visit__patient__date_of_birth__month=models.F("average_time__month")) & models.Q(
                     visit__patient__date_of_birth__day__gt=models.F("average_time__day")),
                 output_field=models.IntegerField()
-            )
+            ) * models.F("micro_seconds")
 
         ).annotate(
-            average_age=models.Func(models.F("age"), function="Avg")
+            average_age=models.Func(models.F("age"), function="Sum") / models.Func(models.F("micro_seconds"), function="Sum")
         ).values("average_age")
 
         return self.annotate(average_age=models.Subquery(average_age))
