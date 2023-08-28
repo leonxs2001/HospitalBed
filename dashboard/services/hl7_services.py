@@ -211,8 +211,6 @@ class UpdateHl7Message(Hl7Message):
         Patient.objects.filter(patient_id=patient_id).update(sex=sex, date_of_birth=date_of_birth)
 
 
-
-
 class CancelAdmissionHl7Message(Hl7Message):
     def parse_message(self):
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
@@ -251,11 +249,13 @@ class CancelDischargeHl7Message(Hl7Message):
         visit_id = int(visit_id_string)
 
         # get and delete discharge if exists
-        discharge = Discharge.objects.select_related("stay").filter(movement_id=movement_id,
-                                                                    stay__visit_id=visit_id).last()
+        discharge = Discharge.objects.select_related("stay__visit").filter(movement_id=movement_id,
+                                                                           stay__visit_id=visit_id).last()
         if discharge:
             discharge.stay.end_date = None
             discharge.stay.save()
+            discharge.stay.visit.discharge_date = None
+            discharge.stay.visit.save()
             discharge.delete()
 
 

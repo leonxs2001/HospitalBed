@@ -34,10 +34,14 @@ class DataRepresentation(models.Model):
     theme_type = models.CharField(max_length=1,
                                   choices=ThemeChoices.choices,
                                   default=ThemeChoices.INFORMATION)
-    time_type = models.CharField(max_length=1, choices=TimeChoices.choices, default=TimeChoices.TIME)
+    time_type = models.CharField(max_length=1,
+                                 choices=TimeChoices.choices,
+                                 default=TimeChoices.TIME)
 
     @property
     def location_manager(self):
+        """Returns the right manager based on the theme_type and location_type"""
+
         if self.theme_type == self.ThemeChoices.INFORMATION or \
                 self.theme_type == DataRepresentation.ThemeChoices.HISTORY:
             if self.location_type == self.LocationChoices.WARD:
@@ -63,7 +67,8 @@ class User(AbstractBaseUser):
 
     username = models.CharField(max_length=32, unique=True)
 
-    data_representations = models.ManyToManyField(DataRepresentation, through="UserDataRepresentation")
+    data_representations = models.ManyToManyField(DataRepresentation,
+                                                  through="UserDataRepresentation")
     USERNAME_FIELD = "username"
 
 
@@ -84,14 +89,19 @@ class UserDataRepresentation(models.Model):
 
     @property
     def locations(self):
+        """Returns all locations based on the time_type and location_type."""
+
         now = timezone.now()
         if self.data_representation.location_type != DataRepresentation.LocationChoices.HOSPITAL:
+            # get the right location class based on the location_type
             location_class = None
             if self.data_representation.location_type == DataRepresentation.LocationChoices.WARD:
                 location_class = Ward
             elif self.data_representation.location_type == DataRepresentation.LocationChoices.ROOM:
                 location_class = Room
 
+            # use the right method on the manager from location_class,
+            # to get the locations based on the time_type
             if self.data_representation.time_type == DataRepresentation.TimeChoices.TIME:
                 return location_class.objects.filter_for_time(self.time)
             elif self.data_representation.time_type == DataRepresentation.TimeChoices.PERIOD:
@@ -103,18 +113,23 @@ class UserDataRepresentation(models.Model):
 
     @property
     def formatted_time(self):
+        """Returns the time attribute as formatted string."""
         if self.time:
             return self.time.strftime(DATE_FORMAT)
         return None
 
     @property
     def formatted_end_time(self):
+        """Returns the end_time attribute as formatted string."""
+
         if self.end_time:
             return self.end_time.strftime(DATE_FORMAT)
         return None
 
     @property
     def location_id(self):
+        """Returns id of the current connected location."""
+
         if self.ward_id:
             return self.ward_id
         elif self.room_id:

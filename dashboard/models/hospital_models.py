@@ -47,7 +47,6 @@ class Room(Location):
     ward = models.ForeignKey(Ward, models.CASCADE)
 
 
-
 class Bed(Location):
     objects = hopital_query_sets.BedQuerySet.as_manager()
     hospital_objects = hopital_query_sets.HospitalBedQuerySet.as_manager()

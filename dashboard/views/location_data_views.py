@@ -52,7 +52,7 @@ class SingleLocationInformationGenerator(LocationInformationGenerator):
 
 class HospitalInformationGenerator(LocationInformationGenerator):
     def get_query_set(self, user_data_representation, manager):
-        return Bed.hospital_objects.all()
+        return manager.all()
 
 
 class MultipleLocationsInformationGenerator(LocationInformationGenerator):

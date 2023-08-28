@@ -9,7 +9,7 @@ from dashboard.models import Stay
 from dashboard.models.hospital_models import Bed, Visit, Room, Ward, Patient, Discharge
 from dashboard.services import Hl7MessageParser
 from dashboard.services.hl7_services import AdmissionHl7Message, DischargeHl7Message, TransferHl7Message, \
-    UpdateHl7Message, CancelTransferHl7Message, CancelDischargeHl7Message, CancelAdmissionHl7Message
+    UpdateHl7Message, CancelTransferHl7Message, CancelDischargeHl7Message, CancelAdmissionHl7Message, Hl7Message
 
 directory_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_hl7_messages")
 order_directory_path = os.path.join(directory_path, "test_order")
@@ -30,7 +30,7 @@ class TestAdmissionHl7Message(TestCase):
         admission_message = admission_message.replace("\n", "\r")
         admission_message_instance = AdmissionHl7Message(hl7.parse(admission_message))
         admission_message_instance.parse_message()
-        self.assertTrue(Stay.objects.filter(visit_id=5223045829).exists(),
+        self.assertTrue(Stay.objects.filter(visit_id=5223045829, end_date=None).exists(),
                         msg="The admission message does not create a stay.")
 
 
@@ -168,7 +168,8 @@ class TestCancelDischargeHl7Message(TestCase):
         bed = Bed.objects.create(id="6", room=room, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
 
         patient = Patient.objects.create(patient_id=5, sex=Patient.SexChoices.DIVERSE, date_of_birth=timezone.now())
-        visit = Visit.objects.create(visit_id=9223023649, admission_date=timezone.now(), patient=patient)
+        visit = Visit.objects.create(visit_id=9223023649, admission_date=timezone.now(), discharge_date=timezone.now(),
+                                     patient=patient)
 
         stay = Stay.objects.create(visit=visit, bed=bed, room=room, ward=ward, start_date=timezone.now(),
                                    movement_id=1, end_date=timezone.datetime.now())
@@ -187,6 +188,9 @@ class TestCancelDischargeHl7Message(TestCase):
 
         self.assertTrue(Stay.objects.filter(id=stay.id, end_date=None).exists(),
                         msg="The cancel discharge message does not reset the end_date of the stay from before the discharge to None.")
+
+        self.assertTrue(Visit.objects.filter(visit_id=visit.visit_id, discharge_date=None).exists(),
+                        msg="The cancel discharge message does not reset the discharge_date of the visit to None.")
 
 
 class TestHl7MessageParser(TestCase):
@@ -215,7 +219,7 @@ class TestHl7MessageParser(TestCase):
         update_message = open(os.path.join(directory_path, "update_message.hl7"), "r").read()
         update_message = update_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(update_message),
-                              TransferHl7Message,
+                              UpdateHl7Message,
                               msg="ADT A08 message without an empty stay (end_date=None) should return a TransferHl7Message.")
 
         ward = Ward.objects.create(id="1", date_of_activation=timezone.now(), date_of_expiry=timezone.now())
@@ -270,9 +274,17 @@ class TestHl7MessageParser(TestCase):
                           msg="A message with a message type unequal to ADT should not return a Hl7Message.")
 
     def test_create_hl7_messages_from_file(self):
-        self.assertEqual(
-            len(Hl7MessageParser._create_hl7_messages_from_file(os.path.join(directory_path, "two_messages.hl7"))), 2,
-            msg="The hl7 message from the two_messages.hl7 file should return 2 Message.")
+        hl7_messages = Hl7MessageParser._create_hl7_messages_from_file(os.path.join(directory_path, "two_messages.hl7"))
+        self.assertEqual(len(hl7_messages), 2,
+                         msg="The method create_hl7_messages_from_file should return 2 Message " +
+                             "if its given the two_messages.hl7 file.")
+
+        self.assertIsInstance(hl7_messages[0], Hl7Message,
+                              msg="The returned list from the method create_hl7_messages_from_file " +
+                                  "should only contain HL7Message-objects.")
+        self.assertIsInstance(hl7_messages[1], Hl7Message,
+                              msg="The returned list from the method create_hl7_messages_from_file " +
+                                  "should only contain HL7Message-objects.")
 
     def test_parse_hl7_messages_from_directory(self):
         new_directory = os.path.join(directory_path, "deletable_test_order")
@@ -291,7 +303,7 @@ class TestHl7MessageParser(TestCase):
                 destination_path = os.path.join(new_directory, filename)
                 shutil.copy2(source_path, destination_path)
 
-        Hl7MessageParser.parse_hl7_message_kfrom_directory(new_directory)
+        Hl7MessageParser.parse_hl7_messages_from_directory(new_directory)
 
         self.assertTrue(Discharge.objects.filter(stay__visit_id=4223045829).exists(),
                         msg="The messages are parsed in the wrong order.")
