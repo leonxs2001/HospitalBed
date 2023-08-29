@@ -23,7 +23,7 @@ class ModelJSONEncoder(DjangoJSONEncoder):
         return super(ModelJSONEncoder, self).default(o)
 
 
-def get_sex_from_location(location):  # TODO throw exception, if it has no number of men
+def get_sex_from_location(location):
     if location.number_of_men > 0:
         return hospital_models.Patient.SexChoices.MALE
     elif location.number_of_women > 0:
