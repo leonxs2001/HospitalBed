@@ -7,16 +7,23 @@ from dashboard.services import RFCLocationParser
 
 
 class TestRFCLocationParser(TestCase):
+    """Unittest class for testing the RFCLocationParser class."""
+
     def test_parse_wards(self):
+        """Tests the parse_wards method."""
+
+        # create the initial models for the test
         deletable_ward = Ward.objects.create(id="2", name="2",
                                              date_of_activation=timezone.datetime(year=2023, month=6, day=6),
                                              date_of_expiry=timezone.datetime(year=2050, month=6, day=6))
 
+        # create the parameters for the tested ward
         ward_id = "1"
         ward_name = "Ward1"
         start_date_string = "20230606"
         end_date_string = "20500606"
 
+        # test the method
         RFCLocationParser.parse_wards(
             [
                 {"ORGID": ward_id,
@@ -36,17 +43,23 @@ class TestRFCLocationParser(TestCase):
                          "The not given ward in the list is not deleted.")
 
     def test_parse_rooms(self):
+        """Tests the parse_rooms method."""
+
+        # create the initial models for the test
         ward = Ward.objects.create(id="A", name="Ward0", date_of_activation=timezone.datetime.now(),
                                    date_of_expiry=timezone.datetime.now())
         deletable_room = Room.objects.create(id="2", name="2", ward=ward,
                                              date_of_activation=timezone.datetime(year=2023, month=6, day=6),
                                              date_of_expiry=timezone.datetime(year=2050, month=6, day=6))
+
+        # create the parameters for the tested room
         room_id = "1"
         room_name = "Room1"
 
         start_date_string = "20230606"
         end_date_string = "20500606"
 
+        # test the method
         RFCLocationParser.parse_rooms(
             [
                 {"ZIMMERID": room_id,
@@ -67,6 +80,9 @@ class TestRFCLocationParser(TestCase):
                          "The not given room in the list is not deleted.")
 
     def test_parse_beds(self):
+        """Tests the parse_beds method."""
+
+        # create the initial models for the test
         ward = Ward.objects.create(id="A", name="Ward0", date_of_activation=timezone.datetime.now(),
                                    date_of_expiry=timezone.datetime.now())
         room = Room.objects.create(id="A", name="Room0", ward=ward,
@@ -75,12 +91,15 @@ class TestRFCLocationParser(TestCase):
         deletable_bed = Bed.objects.create(id="2", name="2", room=room,
                                            date_of_activation=timezone.datetime(year=2023, month=6, day=6),
                                            date_of_expiry=timezone.datetime(year=2050, month=6, day=6))
+
+        # create the parameters for the tested bed
         bed_id = "1"
         bed_name = "Room1"
 
         start_date_string = "20230606"
         end_date_string = "20500606"
 
+        # test the method
         RFCLocationParser.parse_beds(
             [
                 {"BETTID": bed_id,

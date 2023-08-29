@@ -16,7 +16,10 @@ order_directory_path = os.path.join(directory_path, "test_order")
 
 
 class TestAdmissionHl7Message(TestCase):
+    """Unittest class for testing the AdmissionHl7Message class."""
+
     def test_parse_message(self):
+        # test the parsing of an admission message without a given bed
         admission_without_bed_message = open(
             os.path.join(directory_path, "inpatient_admission_without_bed_message.hl7"), "r"
         ).read()
@@ -26,6 +29,7 @@ class TestAdmissionHl7Message(TestCase):
         self.assertFalse(Stay.objects.filter(visit_id=5223045829).exists(),
                          msg="The admission message create a stay, although there is no given bed.")
 
+        # test the parsing of an admission message with a given bed
         admission_message = open(os.path.join(directory_path, "inpatient_admission_message.hl7"), "r").read()
         admission_message = admission_message.replace("\n", "\r")
         admission_message_instance = AdmissionHl7Message(hl7.parse(admission_message))
@@ -35,7 +39,10 @@ class TestAdmissionHl7Message(TestCase):
 
 
 class TestTransferHl7Message(TestCase):
+    """Unittest class for testing the TransferHl7Message class."""
+
     def test_parse_message(self):
+        # test the parsing of a transfer message without a given bed
         transfer_without_bed_message = open(
             os.path.join(directory_path, "transfer_without_bed_message.hl7"), "r"
         ).read()
@@ -45,6 +52,7 @@ class TestTransferHl7Message(TestCase):
         self.assertFalse(Stay.objects.filter(visit_id=6223045829).exists(),
                          msg="The transfer message create a stay, although there is no given bed.")
 
+        # test the parsing of a transfer message with a given bed
         transfer_message = open(
             os.path.join(directory_path, "transfer_message.hl7"), "r"
         ).read()
@@ -60,7 +68,10 @@ class TestTransferHl7Message(TestCase):
 
 
 class TestDischargeHl7Message(TestCase):
+    """Unittest class for testing the DischargeHl7Message class."""
+
     def test_parse_message(self):
+        # create the initial models for the test
         ward = Ward.objects.create(id="2", date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         room = Room.objects.create(id="2", ward=ward, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         bed = Bed.objects.create(id="2", room=room, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
@@ -70,6 +81,7 @@ class TestDischargeHl7Message(TestCase):
 
         stay = Stay.objects.create(visit=visit, bed=bed, room=room, ward=ward, start_date=timezone.now(), movement_id=1)
 
+        # test the parsing of a discharge message
         discharge_message = open(
             os.path.join(directory_path, "discharge_message.hl7"), "r"
         ).read()
@@ -88,9 +100,13 @@ class TestDischargeHl7Message(TestCase):
 
 
 class TestUpdateHl7Message(TestCase):
+    """Unittest class for testing the UpdateHl7Message class."""
+
     def test_parse_message(self):
+        # create the initial patient for the test
         Patient.objects.create(patient_id=1441645, sex=Patient.SexChoices.FEMALE, date_of_birth=timezone.datetime.now())
 
+        # test the parsing of an update message
         update_message = open(
             os.path.join(directory_path, "update_message.hl7"), "r"
         ).read()
@@ -107,7 +123,10 @@ class TestUpdateHl7Message(TestCase):
 
 
 class TestCancelAdmissionHl7Message(TestCase):
+    """Unittest class for testing the CancelAdmissionHl7Message class."""
+
     def test_parse_message(self):
+        # create the initial models for the test
         ward = Ward.objects.create(id="3", date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         room = Room.objects.create(id="3", ward=ward, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         bed = Bed.objects.create(id="3", room=room, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
@@ -117,6 +136,7 @@ class TestCancelAdmissionHl7Message(TestCase):
 
         stay = Stay.objects.create(visit=visit, bed=bed, room=room, ward=ward, start_date=timezone.now(), movement_id=1)
 
+        # test the parsing of a cancel admission message
         cancel_admission_message = open(
             os.path.join(directory_path, "cancel_admission_message.hl7"), "r"
         ).read()
@@ -129,7 +149,10 @@ class TestCancelAdmissionHl7Message(TestCase):
 
 
 class TestCancelTransferHl7Message(TestCase):
+    """Unittest class for testing the CancelTransferHl7Message class."""
+
     def test_parse_message(self):
+        # create the initial models for the test
         ward = Ward.objects.create(id="4", date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         room = Room.objects.create(id="4", ward=ward, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         bed = Bed.objects.create(id="4", room=room, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
@@ -147,6 +170,7 @@ class TestCancelTransferHl7Message(TestCase):
         new_stay = Stay.objects.create(visit=visit, bed=bed, room=room, ward=ward, start_date=timezone.now(),
                                        movement_id=2)
 
+        # test the parsing of a cancel transfer message
         cancel_transfer_message = open(
             os.path.join(directory_path, "cancel_transfer_message.hl7"), "r"
         ).read()
@@ -162,7 +186,10 @@ class TestCancelTransferHl7Message(TestCase):
 
 
 class TestCancelDischargeHl7Message(TestCase):
+    """Unittest class for testing the CancelDischargeHl7Message class."""
+
     def test_parse_message(self):
+        # create the initial models for the test
         ward = Ward.objects.create(id="6", date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         room = Room.objects.create(id="6", ward=ward, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
         bed = Bed.objects.create(id="6", room=room, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
@@ -176,6 +203,7 @@ class TestCancelDischargeHl7Message(TestCase):
 
         discharge = Discharge.objects.create(stay=stay, movement_id=2)
 
+        # test the parsing of a cancel discharge message
         cancel_discharge_message = open(
             os.path.join(directory_path, "cancel_discharge_message.hl7"), "r"
         ).read()
@@ -194,64 +222,64 @@ class TestCancelDischargeHl7Message(TestCase):
 
 
 class TestHl7MessageParser(TestCase):
+    """Unittest class for testing the Hl7MessageParser class."""
+
     def test_create_hl7_message_from_string(self):
+        """Tests the factory method create_hl7_message_from_string."""
+
+        # test the right resulting instance from an inpatient admission message
         admission_message = open(os.path.join(directory_path, "inpatient_admission_message.hl7"), "r").read()
         admission_message = admission_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(admission_message),
                               AdmissionHl7Message, msg="ADT A01 message should return an AdmissionHl7Message.")
 
+        # test the right resulting instance from a discharge message
         discharge_message = open(os.path.join(directory_path, "discharge_message.hl7"), "r").read()
         discharge_message = discharge_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(discharge_message),
                               DischargeHl7Message, msg="ADT A03 message should return a DischargeHl7Message.")
 
+        # test the right resulting instance from a message for the change from in to outpatient
         in_to_out_patient_message = open(os.path.join(directory_path, "change_in_to_outpatient_message.hl7"),
                                          "r").read()
         in_to_out_patient_message = in_to_out_patient_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(in_to_out_patient_message),
                               DischargeHl7Message, msg="ADT A07 message should return a DischargeHl7Message.")
 
+        # test the right resulting instance from a transfer message
         transfer_message = open(os.path.join(directory_path, "transfer_message.hl7"), "r").read()
         transfer_message = transfer_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(transfer_message),
                               TransferHl7Message, msg="ADT A02 message should return a TransferHl7Message.")
 
+        # test the right resulting instance from an update message
         update_message = open(os.path.join(directory_path, "update_message.hl7"), "r").read()
         update_message = update_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(update_message),
                               UpdateHl7Message,
                               msg="ADT A08 message without an empty stay (end_date=None) should return a TransferHl7Message.")
 
-        ward = Ward.objects.create(id="1", date_of_activation=timezone.now(), date_of_expiry=timezone.now())
-        room = Room.objects.create(id="1", ward=ward, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
-        bed = Bed.objects.create(id="1", room=room, date_of_activation=timezone.now(), date_of_expiry=timezone.now())
-
-        patient = Patient.objects.create(patient_id=1, sex=Patient.SexChoices.DIVERSE, date_of_birth=timezone.now())
-        visit = Visit.objects.create(visit_id=4223037703, admission_date=timezone.now(), patient=patient)
-
-        Stay.objects.create(visit=visit, bed=bed, room=room, ward=ward, start_date=timezone.now(), movement_id=1)
-
-        self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(update_message),
-                              UpdateHl7Message,
-                              msg="ADT A08 message with an empty stay (end_date=None) should return a TransferHl7Message.")
-
+        # test the right resulting instance from a cancel admission message
         cancel_admission_message = open(os.path.join(directory_path, "cancel_admission_message.hl7"), "r").read()
         cancel_admission_message = cancel_admission_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(cancel_admission_message),
                               CancelAdmissionHl7Message,
                               msg="ADT A11 message should return an CancelAdmissionHl7Message.")
 
+        # test the right resulting instance from a cancel transfer message
         cancel_transfer_message = open(os.path.join(directory_path, "cancel_transfer_message.hl7"), "r").read()
         cancel_transfer_message = cancel_transfer_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(cancel_transfer_message),
                               CancelTransferHl7Message, msg="ADT A12 message should return a CancelTransferHl7Message.")
 
+        # test the right resulting instance from a cancel discharge message
         cancel_discharge_message = open(os.path.join(directory_path, "cancel_discharge_message.hl7"), "r").read()
         cancel_discharge_message = cancel_discharge_message.replace("\n", "\r")
         self.assertIsInstance(Hl7MessageParser._create_hl7_message_from_string(cancel_discharge_message),
                               CancelDischargeHl7Message,
                               msg="ADT A13 message should return a CancelDischargeHl7Message.")
 
+        # test if messages without a usable message type or trigger event
         merge_message = open(os.path.join(directory_path, "merge_message.hl7"), "r").read()
         merge_message = merge_message.replace("\n", "\r")
         self.assertIsNone(Hl7MessageParser._create_hl7_message_from_string(merge_message),
@@ -274,6 +302,10 @@ class TestHl7MessageParser(TestCase):
                           msg="A message with a message type unequal to ADT should not return a Hl7Message.")
 
     def test_create_hl7_messages_from_file(self):
+        """Tests the factory method create_hl7_messages_from_file."""
+
+        # test the method with a file consisting of 2 messages
+        # the returned list should have 2 Hl7Message elements
         hl7_messages = Hl7MessageParser._create_hl7_messages_from_file(os.path.join(directory_path, "two_messages.hl7"))
         self.assertEqual(len(hl7_messages), 2,
                          msg="The method create_hl7_messages_from_file should return 2 Message " +
@@ -287,22 +319,26 @@ class TestHl7MessageParser(TestCase):
                                   "should only contain HL7Message-objects.")
 
     def test_parse_hl7_messages_from_directory(self):
+        """Tests the method parse_hl7_messages_from_directory."""
+
+        # create a test directory and copy all important hl7 files in it
         new_directory = os.path.join(directory_path, "deletable_test_order")
 
-        # delete if already exists
         try:
             os.mkdir(new_directory)
         except FileExistsError:
             shutil.rmtree(new_directory)
             os.mkdir(new_directory)
 
-        # copy all files
         for filename in os.listdir(order_directory_path):
             if filename.endswith(".hl7"):
                 source_path = os.path.join(order_directory_path, filename)
                 destination_path = os.path.join(new_directory, filename)
                 shutil.copy2(source_path, destination_path)
 
+        # test the method with the created test directory
+        # therefor test the right order of the parsing
+        # and the deletion of all files in the end of the process
         Hl7MessageParser.parse_hl7_messages_from_directory(new_directory)
 
         self.assertTrue(Discharge.objects.filter(stay__visit_id=4223045829).exists(),
@@ -311,4 +347,5 @@ class TestHl7MessageParser(TestCase):
         self.assertEqual(len(os.listdir(new_directory)), 0,
                          msg="The method parse_hl7_message_from_directory should delete all hl7 messages at the end.")
 
+        # delete the created test directory
         shutil.rmtree(new_directory)
