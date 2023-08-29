@@ -2,9 +2,11 @@ from dashboard.models import DataRepresentation
 
 
 def initialize():
+    """Method for initializing all the data of the application."""
     __init_data_representation()
 
 def __init_data_representation():
+    """Method for initializing all the DataRepresentations for the application."""
     DataRepresentation.objects.get_or_create(location_type="H", theme_type="I", time_type="T")
     DataRepresentation.objects.get_or_create(location_type="H", theme_type="I", time_type="N")
     DataRepresentation.objects.get_or_create(location_type="H", theme_type="I", time_type="P")

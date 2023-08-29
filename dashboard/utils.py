@@ -13,6 +13,7 @@ GERMAN_DATE_FORMAT = "%d.%m.%Y %H:%M Uhr"
 
 
 class ModelJSONEncoder(DjangoJSONEncoder):
+    """DjangoJSONEncoder for including the models and QuerySets"""
     def default(self, o):
         if isinstance(o, models.QuerySet):
             return list(o.values())
@@ -24,6 +25,7 @@ class ModelJSONEncoder(DjangoJSONEncoder):
 
 
 def get_sex_from_location(location):
+    """Returns the right string representation of the sex based on number attributes of a given location."""
     if location.number_of_men > 0:
         return hospital_models.Patient.SexChoices.MALE
     elif location.number_of_women > 0:

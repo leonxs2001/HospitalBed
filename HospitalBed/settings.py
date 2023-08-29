@@ -17,18 +17,15 @@ from django.contrib.staticfiles.views import serve
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# hl7 directory with all the files
+# hl7 directory with the hl7 files
 HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/Von echt/Leons_hl7"
 
-# rfc stuff
+# initial rfc stuff
 ASHOST = 'sbb243.sbb.dom'
 CLIENT = '003'
 SYSNR = '00'
 USER = ''
 PASSWD = ''
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-y60%zahb8q%%b*wbzaf9yk&#((r#vpnsa5ykz$d0y+xyt41ut$'
@@ -85,7 +82,7 @@ WSGI_APPLICATION = 'HospitalBed.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
+DATABASES = { # TOD0 Change
     "default": {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'hospital_bed',

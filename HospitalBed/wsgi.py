@@ -17,6 +17,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HospitalBed.settings')
 
 application = get_wsgi_application()
 
+# initialize data and start the scheduled jobs
 initial_data.initialize()
 apscheduler.start()
 

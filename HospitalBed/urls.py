@@ -24,17 +24,21 @@ from dashboard.views.main_views import DashboardView, RegistrationView, \
     LoginView, LogoutView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # could be used later: path('admin/', admin.site.urls),
 
+    # main dashboard template
     path('', DashboardView.as_view(), name="home"),
+
+    # authentication
     path("registration/", RegistrationView.as_view()),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view()),
 
-
+    # managing of UserDataRepresentation
     path("update/order", ManageUserDataRepresentationView.as_view()),
     path("delete/user-data-representation", ManageUserDataRepresentationView.as_view()),
     path("create/user-data_representation", ManageUserDataRepresentationView.as_view()),
 
+    # data response for the template
     path("get_data/<str:location_type>/<str:theme_type>/<str:time_type>/", LocationDataResponseView.as_view())
 ]
