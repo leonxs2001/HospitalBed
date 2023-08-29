@@ -1,7 +1,5 @@
 import datetime
-from zoneinfo import ZoneInfo
 
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -65,7 +63,6 @@ class UserDataRepresentationManager(models.Manager):
         # get the time and end_time attribute based on the time_type
         time = None
         end_time = None
-
         if data_representation.time_type == user_models.DataRepresentation.TimeChoices.TIME:
             time = timezone.now()
         elif data_representation.time_type == user_models.DataRepresentation.TimeChoices.PERIOD:
@@ -75,7 +72,6 @@ class UserDataRepresentationManager(models.Manager):
         # get the right location based on the location_type
         ward = None
         room = None
-
         if data_representation.location_type == user_models.DataRepresentation.LocationChoices.WARD:
             ward = hospital_models.Ward.objects.first()
         elif data_representation.location_type == user_models.DataRepresentation.LocationChoices.ROOM:

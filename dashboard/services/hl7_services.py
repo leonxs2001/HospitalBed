@@ -1,6 +1,6 @@
 import bisect
 import os
-import uuid
+
 from abc import ABC, abstractmethod
 
 import hl7
@@ -36,14 +36,21 @@ ZBE_START_DATE_FIELD = 2
 
 
 class Hl7Message(ABC):
+    """A Class for HL7-messages."""
+
     def __init__(self, message: hl7.Message):
+        # extract all important segments and add them as instance attributes
         self._msh_segment = message.segment("MSH")
         self._pv1_segment = message.segment("PV1")
         self._pid_segment = message.segment("PID")
         self._zbe_segment = message.segment("ZBE")
+
+        # extract the message creation attribute and add it as instance attribute
         self.message_creation = self._msh_segment[MSH_MESSAGE_CREATION_FIELD]
 
     def _get_or_create_patient(self):
+        """Gets or creates a new patient from the message segments and return the result."""
+
         patient_id_string = self._pid_segment.extract_field(field_num=PID_PATIENT_ID_FIELD)
         patient_id = int(patient_id_string)
 
@@ -57,11 +64,12 @@ class Hl7Message(ABC):
                                                        "sex": sex})[0]
 
     def _get_or_create_visit(self, patient: Patient):
+        """Gets or creates a new visit from the message segments for a given patient and return the result."""
+
         visit_id_string = self._pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
         visit_id = int(visit_id_string)
 
-        admission_date_string = self._pv1_segment.extract_field(
-            field_num=PV1_ADMISSION_DATE_FIELD)  # is this right, if the patient was not in ward before
+        admission_date_string = self._pv1_segment.extract_field(field_num=PV1_ADMISSION_DATE_FIELD)
         admission_date = timezone.datetime.strptime(admission_date_string, HL7_DATE_TIME_FORMAT)
 
         return Visit.objects.get_or_create(visit_id=visit_id,
@@ -69,6 +77,8 @@ class Hl7Message(ABC):
                                                      "patient": patient})[0]
 
     def _create_stay(self, visit: Visit):
+        """Gets or creates a new stay from the message segments for a given visit and return the result."""
+
         start_date_string = self._zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
         start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
@@ -82,6 +92,8 @@ class Hl7Message(ABC):
                                    bed=bed, room=room, ward=ward)
 
     def __get_or_create_ward(self):
+        """Gets or creates a new ward from the message segments and return the result."""
+
         start_date_string = self._zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
         start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
         ward_id = self._pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
@@ -94,6 +106,8 @@ class Hl7Message(ABC):
                                                         weeks=1)})[0]
 
     def __get_or_create_room(self, ward: Ward):
+        """Gets or creates a new room from the message segments for a given ward and return the result."""
+
         start_date_string = self._zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
         start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
         room_id = self._pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
@@ -106,6 +120,8 @@ class Hl7Message(ABC):
                                                         weeks=1)})[0]
 
     def __get_or_create_bed(self, room: Room):
+        """Gets or creates a new bed from the message segments for a given room and return the result."""
+
         start_date_string = self._zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
         start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
         bed_id = self._pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
@@ -119,10 +135,13 @@ class Hl7Message(ABC):
 
     @abstractmethod
     def parse_message(self):
+        """Parses the message from the segments in the instance attributes and saves the result in the database."""
         pass
 
 
 class AdmissionHl7Message(Hl7Message):
+    """A class for admission HL7-messages."""
+
     def parse_message(self):
         # only parse the visit, if there is a given bed id
         bed_id = self._pv1_segment.extract_field(field_num=PV1_PATIENT_LOCATION_FIELD,
@@ -135,6 +154,8 @@ class AdmissionHl7Message(Hl7Message):
 
 
 class TransferHl7Message(Hl7Message):
+    """A class for transfer HL7-messages."""
+
     def parse_message(self):
         start_date_string = self._zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
         start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
@@ -142,10 +163,10 @@ class TransferHl7Message(Hl7Message):
         patient = self._get_or_create_patient()
         visit = self._get_or_create_visit(patient)
 
-        # get last stay with visit and end_date == None
+        # get the last stay with visit and end_date == None
         stay = Stay.objects.filter(visit=visit, end_date=None).last()
-        # set end date if stay is not none
-        # could be None if the parsing starts after the admission
+        # set end_date if stay is not none
+        # the stay could be None if the parsing starts after the admission
         if stay:
             stay.end_date = start_date
             stay.save()
@@ -158,6 +179,8 @@ class TransferHl7Message(Hl7Message):
 
 
 class DischargeHl7Message(Hl7Message):
+    """A class for discharge HL7-messages."""
+
     def parse_message(self):
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
         movement_id = int(movement_id_string)
@@ -171,13 +194,13 @@ class DischargeHl7Message(Hl7Message):
         start_date_string = self._zbe_segment.extract_field(field_num=ZBE_START_DATE_FIELD)
         start_date = timezone.datetime.strptime(start_date_string, HL7_DATE_TIME_FORMAT)
 
-        # update the visit discharge_date
+        # update the visits discharge_date
         Visit.objects.filter(visit_id=visit_id).update(discharge_date=discharge_date)
 
-        # get last stay with visit and end_date == None
+        # get the last stay with visit and end_date == None
         stay = Stay.objects.filter(visit_id=visit_id, end_date=None).last()
 
-        # create discharge and save the new end_date if stay is not none
+        # create the new discharge, set the end_date of the stay and safe the stay if the stay is not none
         if stay:
             Discharge.objects.create(movement_id=movement_id, stay=stay)
 
@@ -186,11 +209,14 @@ class DischargeHl7Message(Hl7Message):
 
 
 class UpdateHl7Message(Hl7Message):
+    """A class for update HL7-messages."""
+
     def parse_message(self):
         visit_id_string = self._pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
         visit_id = int(visit_id_string)
 
-        # handle Message also like a transfer if there are no open stays
+        # handle message also like a transfer and create a new stay if there are no open stays
+        # there could be no open stays if the parsing starts after the admission
         if not Stay.objects.filter(visit_id=visit_id, end_date=None).exists():
             patient = self._get_or_create_patient()
             visit = self._get_or_create_visit(patient)
@@ -200,6 +226,7 @@ class UpdateHl7Message(Hl7Message):
             if bed_id:
                 self._create_stay(visit)
 
+        # update the important patient attributes
         patient_id_string = self._pid_segment.extract_field(field_num=PID_PATIENT_ID_FIELD)
         patient_id = int(patient_id_string)
 
@@ -212,19 +239,23 @@ class UpdateHl7Message(Hl7Message):
 
 
 class CancelAdmissionHl7Message(Hl7Message):
+    """A class for the admission canceling HL7-messages."""
+
     def parse_message(self):
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
         movement_id = int(movement_id_string)
         visit_id_string = self._pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
         visit_id = int(visit_id_string)
 
-        # get and delete the canceled stay if exists
+        # get and delete the canceled stay if it exists
+        # couldn't exist if the parsing starts after the admission
         stay = Stay.objects.filter(visit_id=visit_id, movement_id=movement_id).last()
         if stay:
             stay.delete()
 
 
 class CancelTransferHl7Message(Hl7Message):
+    """A class for the transfer canceling HL7-messages."""
     def parse_message(self):
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
         movement_id = int(movement_id_string)
@@ -232,23 +263,30 @@ class CancelTransferHl7Message(Hl7Message):
         visit_id = int(visit_id_string)
 
         # get and delete the canceled stay if exists
+        # couldn't exist if the parsing starts after the admission
         canceled_stay = Stay.objects.filter(visit_id=visit_id, movement_id=movement_id).last()
         if canceled_stay:
             canceled_stay.delete()
 
+            # reset the end_date of the old_stay to None if exists
+            # couldn't exist if the parsing starts after the admission
             old_stay = Stay.objects.filter(visit_id=visit_id, movement_id__lt=movement_id).last()
             if old_stay:
                 Stay.objects.filter(id=old_stay.id).update(end_date=None)
 
 
 class CancelDischargeHl7Message(Hl7Message):
+    """A class for the discharge canceling HL7-messages."""
+
     def parse_message(self):
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
         movement_id = int(movement_id_string)
         visit_id_string = self._pv1_segment.extract_field(field_num=PV1_VISIT_ID_FIELD)
         visit_id = int(visit_id_string)
 
-        # get and delete discharge if exists
+        # get and delete discharge and update the end_date of the connected stay
+        # and the discharge_date of the connected visit to None if exists
+        # couldn't exist if the parsing starts after the admission
         discharge = Discharge.objects.select_related("stay__visit").filter(movement_id=movement_id,
                                                                            stay__visit_id=visit_id).last()
         if discharge:
@@ -260,8 +298,12 @@ class CancelDischargeHl7Message(Hl7Message):
 
 
 class Hl7MessageParser:
+    """A class for the parsing of HL7-files."""
+
     @classmethod
     def parse_hl7_messages_from_directory(cls, path: str):
+        """Parses all HL7-files in a given directory and save the results in the database."""
+
         # get all hl7 messages from the hl7_files
         hl7_messages = []
         for filename in os.listdir(path):
@@ -275,22 +317,26 @@ class Hl7MessageParser:
                                   key=lambda msg: msg.message_creation)
 
                 os.remove(file_path)
-
+        # parse all messages in the sorted list
         for hl7_message in hl7_messages:
             hl7_message.parse_message()
 
     @classmethod
-    def _create_hl7_messages_from_file(cls, path: str) -> list:
+    def _create_hl7_messages_from_file(cls, path: str):
+        """Parses a HL7-file on a given path into a list of Hl7Message instances."""
+
         hl7_messages = []
         with open(path, "r", encoding="ISO-8859-1") as hl7_file:
             # read the string from the file
             hl7_messages_string = hl7_file.read()
 
-            # wrong delimiter in hl7_files
+            # replace the wrong delimiters in the message string
             hl7_messages_string = hl7_messages_string.replace('\n', '\r')
 
             hl7_message_strings = hl7.split_file(hl7_messages_string)
 
+            # go through the message strings from the file,
+            # create the right Hl7Message instance and add it to the result list
             for hl7_message_string in hl7_message_strings:
                 hl7_message = cls._create_hl7_message_from_string(hl7_message_string)
                 if hl7_message:
@@ -300,6 +346,7 @@ class Hl7MessageParser:
 
     @classmethod
     def _create_hl7_message_from_string(cls, message: str) -> Hl7Message:
+        """Parses a given HL7-message string a Hl7Message instance return this instance."""
         hl7_message = hl7.parse(message)
         message_type = hl7_message.segment("MSH").extract_field(field_num=MSH_MESSAGE_TYPE_FIELD,
                                                                 component_num=MESSAGE_TYPE_TYPE_COMPONENT)
