@@ -6,6 +6,7 @@
 </head>
 <body>
 <h2>Login</h2>
+<p>Du bist noch nicht registriert? <a href="/registration">Zur Registration</a></p>
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
