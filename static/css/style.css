@@ -408,8 +408,6 @@ body {
 }
 
 @media all and (max-width: 1000px) {
-    /* CSS that should be displayed if width is equal to or less than 991px and larger
-     than 768px goes here */
     .content-view {
         width: 98%;
     }

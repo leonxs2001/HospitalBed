@@ -77,8 +77,8 @@ class UserDataRepresentationManager(models.Manager):
         elif data_representation.location_type == user_models.DataRepresentation.LocationChoices.ROOM:
             room = hospital_models.Room.objects.first()
 
-        # get a new order based on the greatest used order
-        max_order = user_models.UserDataRepresentation.objects.aggregate(max_order=models.Max('order'))['max_order']
+        # get a new order based on the greatest used order from the user
+        max_order = user_models.UserDataRepresentation.objects.filter(user=user).aggregate(max_order=models.Max('order'))['max_order']
         new_order = 0
         if max_order is not None:
             new_order = max_order + 1

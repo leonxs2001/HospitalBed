@@ -16,6 +16,13 @@ const loaderTemplate = document.querySelector("#template-div .loader");
 
 const DATETIME_REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/
 
+/**
+ * Method for getting the percentage of a given value to a given maxValue.
+ * The percentage is a string rounded to 2 digits.
+ * @param value
+ * @param maxValue
+ * @returns string
+ */
 function percentage(value, maxValue) {
     if (value == undefined || maxValue == undefined || maxValue == 0) {
         return 0;
@@ -23,12 +30,21 @@ function percentage(value, maxValue) {
     return ((value / maxValue) * 100).toFixed(2);
 }
 
+/**
+ * The Manager class for the ContentViews.
+ */
 class ContentViewManager {
     #contentViews = [];
     #draggedContentView;
     #parent = document.querySelector("#content-div");
 
+    /**
+     * Factory-method for the right ContentView based on the given html-contentView.
+     * @param contentView
+     * @returns ContentView
+     */
     createContentView(contentView) {
+        // get the locationType and themeType from the html-contentView
         const locationType = contentView.dataset.location;
         const themeType = contentView.dataset.theme;
 
@@ -48,14 +64,24 @@ class ContentViewManager {
             contentViewInstance = new LocationsInformationContentView(contentView, this);
         }
 
-        this.#insort(contentViewInstance);
+        // inssert the new ContentView into the ContentView list
+        this.#contentViews.push(contentViewInstance);
+
         return contentViewInstance;
     }
 
+    /**
+     * Factory-method for creating a new ContentView based on the parameters.
+     * @param locationType
+     * @param themeType
+     * @param timeType
+     * @returns ContentView
+     */
     createNewContentView(locationType, themeType, timeType) {
         let contentView = null;
 
-        fetch("/create/user-data_representation", {
+        // create the new UserDataRepresentation at the server and use the given result to build the new ContentView
+        fetch("/create/user-data-representation", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -70,19 +96,34 @@ class ContentViewManager {
             if (response.ok) {
                 return response.json();
             }
-            throw new Error("Request fehlgeschlagen.");
+            throw new Error("Request failed.");
         }).then(data => {
+            // get all the data from the response
             const locations = "locations" in data ? data["locations"] : null;
             const user_data_representation = data["user_data_representation"];
             const data_representation = data["data_representation"];
-            contentView = this.createContentView(this.createNewContentViewElement(data_representation, user_data_representation, locations));
+
+            // create the right html-ContentView
+            let htmlContentView = this.createNewContentViewElement(data_representation, user_data_representation, locations);
+
+            // call the factory-method to create a ContentView from the new html-ContentView
+            contentView = this.createContentView(htmlContentView);
 
         }).catch((error) => console.log(error));
 
         return contentView
     }
 
+    /**
+     * Factory-method for creating a new html-ContentView based on the given parameters.
+     * @param data_representation
+     * @param user_data_representation
+     * @param locations
+     * @returns Node
+     */
     createNewContentViewElement(data_representation, user_data_representation, locations) {
+
+        // clone the contentView template
         const contentView = contentViewTemplate.cloneNode(true);
         contentView.removeAttribute("id");
         contentView.classList.add("content-view");
@@ -91,7 +132,7 @@ class ContentViewManager {
         const themeType = data_representation["theme_type"];
         const timeType = data_representation["time_type"];
 
-        //set all data-attributes
+        // set all data-attributes
         contentView.dataset.location = locationType;
         contentView.dataset.theme = themeType;
         contentView.dataset.time = timeType;
@@ -99,6 +140,8 @@ class ContentViewManager {
         contentView.dataset.id = user_data_representation["id"];
 
         const timeInputDiv = contentView.querySelector(".time-input-div");
+
+        // build the timeInputDiv based on the timeType
         if (timeType == "T") {
             const timeInputSpan = timeInputSpanTemplate.cloneNode(true);
 
@@ -120,13 +163,23 @@ class ContentViewManager {
             contentView.querySelector(".location-input-div").appendChild(locationSelect);
         }
 
+        // add the new html-ContentView to the parent html-element of the html-ContentViews
         ContentView.parent.appendChild(contentView);
 
         contentView.scrollIntoView();
+
         return contentView;
     }
 
+    /**
+     * Method for filling the given locationSelect with the given locations.
+     * @param locations
+     * @param locationSelect
+     * @param locationType
+     * @param user_data_representation
+     */
     fillLocationSelect(locations, locationSelect, locationType, user_data_representation) {
+        // create a new option for every location and add it to the locationSelect
         locations.forEach((location) => {
             const newOption = document.createElement("option");
             const locationId = location["id"];
@@ -135,33 +188,51 @@ class ContentViewManager {
 
             locationSelect.appendChild(newOption);
 
+            // set the current selected location from the UserDataRepresentation if the locationType has the right value
             if (locationType == "W" && locationId == user_data_representation["ward"] || locationType == "R" && locationId == user_data_representation["room"]) {
                 locationSelect.value = locationId;
             }
         });
     }
 
+    /**
+     * Method for handling the start of the drag process.
+     * @param contentView
+     */
     ondDragStart(contentView) {
+        // set the ContentView as the new draggedContentView
         this.#draggedContentView = contentView;
     }
 
+    /**
+     * Method for handling the entering of another ContentView while the drag process.
+     * @param contentView
+     */
     onDragEnter(contentView) {
+        // only chang the ContentViews order if the entered ContentView ist not the dragged one
         if (contentView != this.#draggedContentView) {
             // delete the content view from the array
-            this.#contentViews.splice(this.#draggedContentView.order, 1);
+            this.#contentViews.splice(this.#draggedContentView.order, 1)
+
+            // change the position of the ContentViews to get the right drag and drop behavior
             if (this.#draggedContentView.order < contentView.order) {
-                this.#parent.insertBefore(this.#draggedContentView.contentView, contentView.contentView.nextElementSibling);
                 // add content view to the right place
+                this.#parent.insertBefore(this.#draggedContentView.contentView, contentView.contentView.nextElementSibling);
                 this.#contentViews.splice(contentView.order, 0, this.#draggedContentView);
             } else {
+                // add content view to the left place
                 this.#parent.insertBefore(this.#draggedContentView.contentView, contentView.contentView);
-                // add content view to the right place
                 this.#contentViews.splice(contentView.order, 0, this.#draggedContentView);
             }
+
+            // reset the order of all ContentViews
             this.resetOrder();
         }
     }
 
+    /**
+     * Method for resetting the order of all ContentViews in the contentViews attribute.
+     */
     resetOrder() {
         this.#contentViews.forEach((contentView, index) => {
             contentView.contentView.dataset.order = index;
@@ -169,7 +240,11 @@ class ContentViewManager {
         });
     }
 
+    /**
+     * Method for updating of all ContentViews in the contentViews attribute at the server.
+     */
     updateOrder() {
+        // convert the contentViews in a list of dicts with the id and the order of the DataRepresentation
         let orderIdDictList = [];
         this.#contentViews.forEach((contentView) => {
             orderIdDictList.push({
@@ -178,6 +253,7 @@ class ContentViewManager {
             })
         });
 
+        // fetch the data to the server
         fetch("/update/order", {
             method: "PUT",
             headers: {
@@ -193,6 +269,10 @@ class ContentViewManager {
         }).catch((error) => console.log(error));
     }
 
+    /**
+     * Method for removing the given ContentView
+     * @param contentView
+     */
     removeContentView(contentView) {
         this.#contentViews.splice(this.#contentViews.indexOf(contentView), 1);
         this.resetOrder();
@@ -201,7 +281,14 @@ class ContentViewManager {
 
     }
 
-    setRectangleClassAndTextForSex(locationData, sexRectangle, sexSpan) {//TODO auslagern in extra vorlklasse
+    /**
+     * Method for setting the color of the given html-sexRectangle and the text of the given html-sexSpan
+     * based on the given locationData and its numbers of sexes.
+     * @param locationData
+     * @param sexRectangle
+     * @param sexSpan
+     */
+    setRectangleClassAndTextForSex(locationData, sexRectangle, sexSpan) {
         sexRectangle.classList.remove("male-rectangle", "female-rectangle", "diverse-rectangle", "empty-rectangle");
         if (locationData.number_of_men > 0) {
             sexRectangle.classList.add("male-rectangle");
@@ -213,12 +300,16 @@ class ContentViewManager {
             sexRectangle.classList.add("diverse-rectangle");
             sexSpan.innerText = "Divers";
         } else {
-            sexRectangle.classList.add("empty-rectangle");//TODO add empty view!
+            sexRectangle.classList.add("empty-rectangle");
             sexSpan.innerText = "Leer";
         }
     }
 
-    addEmptyOptionToSelect(select) {// TODO add error message
+    /**
+     * Method for clearing the given select adding an empty select and making it disabled.
+     * @param select
+     */
+    addEmptyOptionToSelect(select) {
         const newOption = document.createElement("option");
         newOption.innerText = "-- leer --";
         newOption.value = -1;
@@ -227,22 +318,12 @@ class ContentViewManager {
 
         select.appendChild(newOption);
     }
-
-    #insort(contentView) {
-        let found = false;
-        for (let i = 0; i < this.#contentViews.length; i++) {
-            if (contentView.order < this.#contentViews[i].order) {
-                this.#contentViews.splice(i, 0, this);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            this.#contentViews.push(contentView);
-        }
-    }
 }
 
+/**
+ * Base class for the ContentViews.
+ * Represents a html-ContentView in the Code.
+ */
 class ContentView {
     static parent = document.querySelector("#content-div");
     #contentViewManager;
@@ -256,6 +337,7 @@ class ContentView {
     #interval = null;
 
     constructor(contentView, contentViewManager) {
+        // initialize all attributes
         this.#contentViewManager = contentViewManager;
         this.#contentView = contentView;
         this.#contentDataDiv = contentView.querySelector(".content-view-data-div");
@@ -264,27 +346,34 @@ class ContentView {
         this.#themeType = contentView.dataset.theme;
         this.#timeType = contentView.dataset.time;
         this.#userDataRepresentationId = contentView.dataset.id;
+
+        // buidl all parts of the html-ContentView
         this.buildContentViewDataDiv();
         this.#setContentViewHeading();
         this.#addEventListeners();
-        const locationSelect = this.#contentView.querySelector(".selection-input");//TODO add to class
-        /*if (locationSelect != null && locationSelect.querySelectorAll("option").length == 0) {
-            this.contentViewManager.addEmptyOptionToSelect(locationSelect);
-        }*/
+
+        // fill the ContentView with data
         this.fetchDataForContentView();
+
+        // setting an interval for a neartime reset the data of the ContentView every 5 minutes
         if (this.#timeType == "N") {
             this.#interval = setInterval(this.fetchDataForContentView.bind(this), 300000);
         }
     }
 
+    /**
+     * Abstract template method.
+     */
     buildContentViewDataDiv() {
         throw new Error("Not defined.")
     }
 
+    /**
+     * Method for building the html-heading of the html-ContentView.
+     */
     #setContentViewHeading() {
-
         //add the heading
-        const contentViewHeading = this.#contentView.querySelector(".content-view-heading");//TODO add to class
+        const contentViewHeading = this.#contentView.querySelector(".content-view-heading");
         let headingText = "";
         switch (this.#themeType) {
             case "I":
@@ -318,15 +407,24 @@ class ContentView {
         contentViewHeading.innerText = headingText;
     }
 
+    /**
+     * Method for adding all important event listeners to the html-elements.
+     */
     #addEventListeners() {
+        // drag and drop event listeners
         this.#contentView.addEventListener('dragstart', this.onDragStart.bind(this));
         this.#contentView.addEventListener("dragenter", this.onDragEnter.bind(this));
         this.#contentView.addEventListener("drop", this.onDrop.bind(this));
         this.#contentView.addEventListener("dragover", (event) => event.preventDefault());
 
+        // deletion event listener
         this.#contentView.querySelector(".delete-image").addEventListener("click", this.onDeletionOfContentView.bind(this));
+
+        // download event listener
         this.#contentView.querySelector(".download-image").addEventListener("click", this.onDownloadDataForView.bind(this));
-        let inputElements = this.#contentView.querySelectorAll(".selection-input, .from-input, .to-input, .time-input");//TODO add to class4
+
+        // add the event listeners for the input change to all important inputs
+        let inputElements = this.#contentView.querySelectorAll(".selection-input, .from-input, .to-input, .time-input");
         if (inputElements) {
             for (const inputElement of inputElements) {
                 inputElement.addEventListener("change", this.onInputChange.bind(this));
@@ -335,10 +433,14 @@ class ContentView {
 
     }
 
-
+    /**
+     * Method for fetching data from the server and filling the ContentView.
+     * @param updateInputs
+     */
     fetchDataForContentView(updateInputs = false) {
-        const loader = this.#contentView.querySelector(".loader"); //TODO add to class
-        const dataHolder = this.#contentView.querySelector(".data-holder");//TODO add to class
+        const loader = this.#contentView.querySelector(".loader");
+
+        const dataHolder = this.#contentView.querySelector(".data-holder");
         if (dataHolder) {
             dataHolder.hidden = true;
         } else {
@@ -348,12 +450,14 @@ class ContentView {
                 locationListDiv.removeChild(locationDiv);
             });
         }
+
         loader.hidden = false;
 
 
         // create the right url
         let url = this.#createUrl(updateInputs, false);
 
+        // fetch data from server
         fetch(url.toString(), {
             method: "GET",
             headers: {
@@ -365,11 +469,11 @@ class ContentView {
             }
             throw new Error("Request failed.");
         }).then(data => {
-
+            // reset the locationSelect of the ContentView
             if (this.#locationType != "H") {
                 const locations = data.locations;
                 const user_data_representation = data.user_data_representation;
-                const locationSelect = this.#contentView.querySelector(".selection-input");//TODO add to class
+                const locationSelect = this.#contentView.querySelector(".selection-input");
 
                 //delete all old options
                 while (locationSelect.options.length > 0) {
@@ -384,38 +488,64 @@ class ContentView {
                 }
             }
 
+            // fill the html-ContentView with the resulting data
             this.fillContentViewDataDivWithData(data);
+
             loader.hidden = true;
         }).catch((error) => console.log(error));
 
     }
 
+    /**
+     * Abstract template method for filling the ContentView with the given data.
+     * @param data
+     */
     fillContentViewDataDivWithData(data) {
         throw Error("Not defined.");
     }
 
+    /**
+     * Method for handeling the input change.
+     */
     onInputChange() {
+        // call the method for fetching the data
         this.fetchDataForContentView(true);
     }
 
+    /**
+     * Method for handling the start of drag process.
+     */
     onDragStart() {
         this.#contentViewManager.ondDragStart(this);
     }
 
+    /**
+     * Method for handling the entering of another ContentView while the drag process.
+     */
     onDragEnter() {
         this.#contentViewManager.onDragEnter(this);
     }
 
+    /**
+     * Method for handling the drop of a ContentView while the drag process.
+     */
     onDrop() {
+        // update the order of all ContentViews
         this.#contentViewManager.updateOrder();
     }
 
+    /**
+     * Method for deleting a ContentView.
+     */
     onDeletionOfContentView() {
         if (confirm("Sind sie sicher, dass sie diese Datenrepräsentation löschen wollen?")) {
+
+            // clear the intervall if the ContentView was a neartime ContentView.
             if (this.#interval) {
                 clearInterval(this.#interval);
             }
 
+            // tell the server, that a UserDataRepresentation was deleted
             fetch("/delete/user-data-representation", {
                 method: "DELETE",
                 headers: {
@@ -433,16 +563,26 @@ class ContentView {
             }).catch((error) => console.log(error));
         }
 
+        // remove the ContentView also on the managers side.
         this.#contentViewManager.removeContentView(this);
 
     }
 
-    // redirect to the download of csv data
+     /**
+      * Method for downloading the data in csv format.
+     */
     onDownloadDataForView() {
+        // redirect to the download-url of csv data
         let url = this.#createUrl(false, true);
         window.open(url, "_blank");
     }
 
+    /**
+     * Method for creating the right url for the ContentView.
+     * @param updateInputs
+     * @param downloadCSV
+     * @returns URL
+     */
     #createUrl(updateInputs, downloadCSV) {
         let url = new URL(location.protocol + "//" + location.host + "/get_data" + "/" + this.#locationType + "/" + this.#themeType + "/" + this.#timeType + "/");
 
@@ -481,6 +621,7 @@ class ContentView {
         return url;
     }
 
+    // Setters and Getters
     get contentView() {
         return this.#contentView;
     }
@@ -518,6 +659,9 @@ class ContentView {
     }
 }
 
+/**
+ * Class for the ContentViews with room-information.
+ */
 class RoomInformationContentView extends ContentView {
     buildContentViewDataDiv() {
         this.contentDataDiv.appendChild(loaderTemplate.cloneNode(true));
@@ -535,7 +679,6 @@ class RoomInformationContentView extends ContentView {
 
         const roomData = data["data"];
         if (roomData.length == 0) {
-            //TODO show error!
             roomDataDiv.hidden = true;
             roomDataDiv.style.display = 'none';
         } else {
@@ -553,6 +696,9 @@ class RoomInformationContentView extends ContentView {
     }
 }
 
+/**
+ * Class for the ContentViews with single-location-information.
+ */
 class LocationInformationContentView extends ContentView {
     buildContentViewDataDiv() {
         this.contentDataDiv.appendChild(loaderTemplate.cloneNode(true));
@@ -565,7 +711,6 @@ class LocationInformationContentView extends ContentView {
         const canvas = dataDiv.querySelector(".information-chart-canvas");
 
         if (locationData.length == 0) {
-            //TODO show error!
             canvas.hidden = true;
             canvas.style.display = 'none';
         } else {
@@ -591,10 +736,15 @@ class LocationInformationContentView extends ContentView {
         }
     }
 
+    /**
+     * Method for creating or getting the current chart for the data.
+     * @param canvas
+     * @returns Chart
+     */
     #getOrCreateInformationChart(canvas) {
         let chart = Chart.getChart(canvas);
         if (!chart) {
-            chart = new Chart(canvas, {//TODO erst beim befüllen
+            chart = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
                     labels: ["Männlich", "Weiblich", "Divers", "Leer"],
@@ -652,6 +802,9 @@ class LocationInformationContentView extends ContentView {
     }
 }
 
+/**
+ * Class for the ContentViews with single-location-history.
+ */
 class LocationHistoryContentView extends ContentView {
     buildContentViewDataDiv() {
         this.contentDataDiv.appendChild(loaderTemplate.cloneNode(true));
@@ -694,6 +847,11 @@ class LocationHistoryContentView extends ContentView {
         }
     }
 
+    /**
+     * Method for creating or getting the current chart for the data.
+     * @param canvas
+     * @returns Chart
+     */
     #getOrCreateHistoryChart(canvas) {
         let chart = Chart.getChart(canvas);
         if (!chart) {
@@ -730,6 +888,9 @@ class LocationHistoryContentView extends ContentView {
     }
 }
 
+/**
+ * Class for the ContentViews with multiple-beds-information.
+ */
 class BedsInformationContentView extends ContentView {
     buildContentViewDataDiv() {
         this.contentDataDiv.appendChild(bedListHeadDivTemplate.cloneNode(true));
@@ -758,6 +919,9 @@ class BedsInformationContentView extends ContentView {
     }
 }
 
+/**
+ * Class for the ContentViews with multiple-locations-information.
+ */
 class LocationsInformationContentView extends ContentView {
     buildContentViewDataDiv() {
         const locationListHeadDiv = locationListHeadDivTemplate.cloneNode(true);
@@ -831,15 +995,19 @@ class LocationsInformationContentView extends ContentView {
     }
 }
 
-
+// listener for the load event of the window
+// important to initialize everything
 window.addEventListener("load", () => {
+    // create a new ContentViewManager
     const contentViewManager = new ContentViewManager();
 
+    // get all initial html-ContentViews and create the code ContentView representation
     const contentViews = document.querySelectorAll('.content-view');
     contentViews.forEach((contentView) => {
         contentViewManager.createContentView(contentView);
     });
 
+    // Add the click event to all the elements for creating a new ContentView
     const newViewSelects = document.querySelectorAll(".selection.time");
     if (newViewSelects) {
         newViewSelects.forEach((newViewSelect) => {
