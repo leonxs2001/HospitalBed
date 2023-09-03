@@ -82,7 +82,7 @@ WSGI_APPLICATION = 'HospitalBed.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = { # TOD0 Change
+DATABASES = {
     "default": {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'hospital_bed',

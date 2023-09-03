@@ -35,7 +35,7 @@ ZBE_MOVEMENT_ID_FIELD = 1
 ZBE_START_DATE_FIELD = 2
 
 
-class Hl7Message(ABC):
+class HL7Message(ABC):
     """A Class for HL7-messages."""
 
     def __init__(self, message: hl7.Message):
@@ -139,7 +139,7 @@ class Hl7Message(ABC):
         pass
 
 
-class AdmissionHl7Message(Hl7Message):
+class AdmissionHL7Message(HL7Message):
     """A class for admission HL7-messages."""
 
     def parse_message(self):
@@ -153,7 +153,7 @@ class AdmissionHl7Message(Hl7Message):
             self._create_stay(visit)
 
 
-class TransferHl7Message(Hl7Message):
+class TransferHL7Message(HL7Message):
     """A class for transfer HL7-messages."""
 
     def parse_message(self):
@@ -178,7 +178,7 @@ class TransferHl7Message(Hl7Message):
             self._create_stay(visit)
 
 
-class DischargeHl7Message(Hl7Message):
+class DischargeHL7Message(HL7Message):
     """A class for discharge HL7-messages."""
 
     def parse_message(self):
@@ -208,7 +208,7 @@ class DischargeHl7Message(Hl7Message):
             stay.save()
 
 
-class UpdateHl7Message(Hl7Message):
+class UpdateHL7Message(HL7Message):
     """A class for update HL7-messages."""
 
     def parse_message(self):
@@ -238,7 +238,7 @@ class UpdateHl7Message(Hl7Message):
         Patient.objects.filter(patient_id=patient_id).update(sex=sex, date_of_birth=date_of_birth)
 
 
-class CancelAdmissionHl7Message(Hl7Message):
+class CancelAdmissionHL7Message(HL7Message):
     """A class for the admission canceling HL7-messages."""
 
     def parse_message(self):
@@ -254,7 +254,7 @@ class CancelAdmissionHl7Message(Hl7Message):
             stay.delete()
 
 
-class CancelTransferHl7Message(Hl7Message):
+class CancelTransferHL7Message(HL7Message):
     """A class for the transfer canceling HL7-messages."""
     def parse_message(self):
         movement_id_string = self._zbe_segment.extract_field(field_num=ZBE_MOVEMENT_ID_FIELD)
@@ -275,7 +275,7 @@ class CancelTransferHl7Message(Hl7Message):
                 Stay.objects.filter(id=old_stay.id).update(end_date=None)
 
 
-class CancelDischargeHl7Message(Hl7Message):
+class CancelDischargeHL7Message(HL7Message):
     """A class for the discharge canceling HL7-messages."""
 
     def parse_message(self):
@@ -297,7 +297,7 @@ class CancelDischargeHl7Message(Hl7Message):
             discharge.delete()
 
 
-class Hl7MessageParser:
+class HL7MessageParser:
     """A class for the parsing of HL7-files."""
 
     @classmethod
@@ -345,7 +345,7 @@ class Hl7MessageParser:
         return hl7_messages
 
     @classmethod
-    def _create_hl7_message_from_string(cls, message: str) -> Hl7Message:
+    def _create_hl7_message_from_string(cls, message: str) -> HL7Message:
         """Parses a given HL7-message string a Hl7Message instance return this instance."""
         hl7_message = hl7.parse(message)
         message_type = hl7_message.segment("MSH").extract_field(field_num=MSH_MESSAGE_TYPE_FIELD,
@@ -354,18 +354,18 @@ class Hl7MessageParser:
                                                                  component_num=MESSAGE_TYPE_TRIGGER_EVENT_COMPONENT)
         if message_type == "ADT":
             if trigger_event == "A01":
-                return AdmissionHl7Message(hl7_message)
+                return AdmissionHL7Message(hl7_message)
             elif trigger_event == "A02":
-                return TransferHl7Message(hl7_message)
+                return TransferHL7Message(hl7_message)
             elif trigger_event == "A03" or trigger_event == "A07":
-                return DischargeHl7Message(hl7_message)
+                return DischargeHL7Message(hl7_message)
             elif trigger_event == "A08":
-                return UpdateHl7Message(hl7_message)
+                return UpdateHL7Message(hl7_message)
             elif trigger_event == "A11":
-                return CancelAdmissionHl7Message(hl7_message)
+                return CancelAdmissionHL7Message(hl7_message)
             elif trigger_event == "A12":
-                return CancelTransferHl7Message(hl7_message)
+                return CancelTransferHL7Message(hl7_message)
             elif trigger_event == "A13":
-                return CancelDischargeHl7Message(hl7_message)
+                return CancelDischargeHL7Message(hl7_message)
 
         return None

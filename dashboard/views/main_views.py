@@ -13,7 +13,7 @@ from django.views.generic import TemplateView
 from django.conf import settings
 
 from dashboard.models import User, UserDataRepresentation, Ward, Room, DataRepresentation
-from dashboard.services import Hl7MessageParser
+from dashboard.services import HL7MessageParser
 
 
 class CustomUserCreationForm(BaseUserCreationForm):
