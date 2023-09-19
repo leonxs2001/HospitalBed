@@ -903,7 +903,6 @@ class BedsInformationContentView extends ContentView {
         const dataDiv = this.contentView.querySelector(".content-view-data-div");//TODO add to class
         const bedsData = data["data"];
         const bedListDiv = dataDiv.querySelector(".location-list-div");
-
         bedsData.forEach(bedData => {
             const newBedDiv = bedDivTemplate.cloneNode(true);
             const nameSpan = newBedDiv.querySelector(".bed-name-span");

@@ -141,7 +141,7 @@ class AgeAnnotationQuerySet(models.QuerySet):
             average_age=models.Func(models.F("age"), function="Avg")
         ).values("average_age")
 
-        return self.annotate(average_age=models.Subquery(average_age)).exclude(average_age=None)
+        return self.annotate(average_age=models.Subquery(average_age)).distinct()
 
     def age_over_period_annotation(self, start: datetime.datetime, end: datetime.datetime):
         """Returns the given QuerySet with the annotated average age for a given period of time."""
