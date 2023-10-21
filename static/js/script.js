@@ -1,3 +1,9 @@
+import {
+    deleteUserDataRepresentation,
+    createNewUserDataRepresentation,
+    updateUserDataRepresentationOrder
+} from "./server-communication.js";
+
 const csrfMiddlewareToken = document.querySelector('[name=csrfmiddlewaretoken]');
 const contentViewTemplate = document.querySelector("#content-view-template");
 const timeInputSpanTemplate = document.querySelector("#template-div .time-input-span.time-template");
@@ -79,25 +85,7 @@ class ContentViewManager {
      */
     createNewContentView(locationType, themeType, timeType) {
         let contentView = null;
-
-        // create the new UserDataRepresentation at the server and use the given result to build the new ContentView
-        fetch("/create/user-data-representation", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfMiddlewareToken.value
-            },
-            body: JSON.stringify({
-                location_type: locationType,
-                theme_type: themeType,
-                time_type: timeType,
-            })
-        }).then((response) => {
-            if (response.ok) {
-                return response.json();
-            }
-            throw new Error("Request failed.");
-        }).then(data => {
+        createNewUserDataRepresentation(locationType, themeType, timeType,  data => {
             // get all the data from the response
             const locations = "locations" in data ? data["locations"] : null;
             const user_data_representation = data["user_data_representation"];
@@ -108,10 +96,9 @@ class ContentViewManager {
 
             // call the factory-method to create a ContentView from the new html-ContentView
             contentView = this.createContentView(htmlContentView);
+        })
 
-        }).catch((error) => console.log(error));
-
-        return contentView
+        return contentView;
     }
 
     /**
@@ -253,20 +240,7 @@ class ContentViewManager {
             })
         });
 
-        // fetch the data to the server
-        fetch("/update/order", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfMiddlewareToken.value
-            },
-            body: JSON.stringify(orderIdDictList)
-        }).then((response) => {
-            if (response.ok) {
-                return response.text();
-            }
-            throw new Error("Request failed.");
-        }).catch((error) => console.log(error));
+        updateUserDataRepresentationOrder(orderIdDictList);
     }
 
     /**
@@ -467,7 +441,7 @@ class ContentView {
             if (response.ok) {
                 return response.json();
             }
-            throw new Error("Request failed.");
+            throw new Error(`Request failed with statuscode ${response.status}.`);
         }).then(data => {
             // reset the locationSelect of the ContentView
             if (this.#locationType != "H") {
@@ -539,37 +513,20 @@ class ContentView {
      */
     onDeletionOfContentView() {
         if (confirm("Sind sie sicher, dass sie diese Datenrepräsentation löschen wollen?")) {
-
-            // clear the intervall if the ContentView was a neartime ContentView.
-            if (this.#interval) {
-                clearInterval(this.#interval);
-            }
-
-            // tell the server, that a UserDataRepresentation was deleted
-            fetch("/delete/user-data-representation", {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfMiddlewareToken.value
-                },
-                body: JSON.stringify({
-                    id: this.userDataRepresentationId
-                })
-            }).then((response) => {
-                if (response.ok) {
-                    return response.text();
+            deleteUserDataRepresentation(this.userDataRepresentationId, () => {
+                // clear the intervall if the ContentView was a neartime ContentView.
+                if (this.#interval) {
+                    clearInterval(this.#interval);
                 }
-                throw new Error("Request fehlgeschlagen.");
-            }).catch((error) => console.log(error));
+
+                // remove the ContentView also on the managers side.
+                this.#contentViewManager.removeContentView(this);
+            });
         }
-
-        // remove the ContentView also on the managers side.
-        this.#contentViewManager.removeContentView(this);
-
     }
 
-     /**
-      * Method for downloading the data in csv format.
+    /**
+     * Method for downloading the data in csv format.
      */
     onDownloadDataForView() {
         // redirect to the download-url of csv data

@@ -148,6 +148,7 @@ class AgeAnnotationQuerySet(models.QuerySet):
 
         # create the average age subquery for every location and the given period of time
         average_age = hospital_models.Stay.objects.filter(
+            # TODO berechne alter auf der linken und rechten Seite (genau) Durchschnitt  berechnen
             id__in=models.OuterRef("stay__id")
         ).filter(
             # filter for the given period of time
@@ -459,7 +460,6 @@ class HospitalBedQuerySet(LocationInformationQuerySet, LocationOccupancyQuerySet
         )
 
     def get_occupancy(self, time: timezone.datetime):
-
         return self.aggregate(
             # annotate the number of occupied beds by counting the connected stays
             number=models.Count('stay', distinct=True,
