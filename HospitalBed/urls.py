@@ -40,5 +40,5 @@ urlpatterns = [
     path("create/user-data-representation", ManageUserDataRepresentationView.as_view()),
 
     # data response for the template
-    path("get_data/<str:location_type>/<str:theme_type>/<str:time_type>/", LocationDataResponseView.as_view())
+    path("get_data/", LocationDataResponseView.as_view())
 ]

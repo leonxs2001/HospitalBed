@@ -244,11 +244,14 @@ class LocationDataResponseView(View):
     """View for dynamically returning the requested data to the template."""
 
     @method_decorator(login_required)
-    def get(self, request, location_type, theme_type, time_type):
+    def get(self, request):
         """Returns the right data in a HttpResponse for the template and Updates the UserDataRepresentation"""
 
         user_data_representation = UserDataRepresentation.objects.select_related('data_representation').get(
             id=request.GET["id"])
+
+        location_type = user_data_representation.data_representation.location_type
+        time_type = user_data_representation.data_representation.time_type
         locations = None
 
         # update the UserDataRepresentation if the update_flag is set in the request get parameters

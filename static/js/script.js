@@ -1,7 +1,8 @@
 import {
     deleteUserDataRepresentation,
     createNewUserDataRepresentation,
-    updateUserDataRepresentationOrder
+    updateUserDataRepresentationOrder,
+    downloadUserDataRepresentationDataAsCSV, getUserDataRepresentationData
 } from "./server-communication.js";
 
 const csrfMiddlewareToken = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -85,7 +86,7 @@ class ContentViewManager {
      */
     createNewContentView(locationType, themeType, timeType) {
         let contentView = null;
-        createNewUserDataRepresentation(locationType, themeType, timeType,  data => {
+        createNewUserDataRepresentation(locationType, themeType, timeType, data => {
             // get all the data from the response
             const locations = "locations" in data ? data["locations"] : null;
             const user_data_representation = data["user_data_representation"];
@@ -427,22 +428,33 @@ class ContentView {
 
         loader.hidden = false;
 
+        let location_id = null;
+        let time = null;
+        let endTime = null;
 
-        // create the right url
-        let url = this.#createUrl(updateInputs, false);
+        if (this.#locationType != "H") {
+            let selectionElement = this.#contentView.querySelector(".selection-input");
+            location_id = selectionElement.value
+        }
 
-        // fetch data from server
-        fetch(url.toString(), {
-            method: "GET",
-            headers: {
-                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-        }).then((response) => {
-            if (response.ok) {
-                return response.json();
+        //add the time params, if its a time type
+        if (this.#timeType == "T") {
+            const timeElement = this.#contentView.querySelector(".time-input");
+            time = timeElement.value;
+            if (!time) {
+                throw new Error("There is no given time.");
             }
-            throw new Error(`Request failed with statuscode ${response.status}.`);
-        }).then(data => {
+        } else if (this.#timeType == "P") {
+            const fromTimeElement = this.#contentView.querySelector(".from-input");
+            time = fromTimeElement.value;
+            const toTimeElement = this.#contentView.querySelector(".to-input");
+            endTime = toTimeElement.value;
+            if (!time || !endTime) {
+                throw new Error("There is no given time for from or to.");
+            }
+        }
+
+        getUserDataRepresentationData(this.#userDataRepresentationId, updateInputs, location_id, time, endTime, data => {
             // reset the locationSelect of the ContentView
             if (this.#locationType != "H") {
                 const locations = data.locations;
@@ -466,8 +478,7 @@ class ContentView {
             this.fillContentViewDataDivWithData(data);
 
             loader.hidden = true;
-        }).catch((error) => console.log(error));
-
+        });
     }
 
     /**
@@ -529,53 +540,7 @@ class ContentView {
      * Method for downloading the data in csv format.
      */
     onDownloadDataForView() {
-        // redirect to the download-url of csv data
-        let url = this.#createUrl(false, true);
-        window.open(url, "_blank");
-    }
-
-    /**
-     * Method for creating the right url for the ContentView.
-     * @param updateInputs
-     * @param downloadCSV
-     * @returns URL
-     */
-    #createUrl(updateInputs, downloadCSV) {
-        let url = new URL(location.protocol + "//" + location.host + "/get_data" + "/" + this.#locationType + "/" + this.#themeType + "/" + this.#timeType + "/");
-
-        url.searchParams.append("id", this.#userDataRepresentationId);
-
-        url.searchParams.append("update_flag", updateInputs.toString());
-
-        url.searchParams.append("download", downloadCSV.toString());
-
-        //add the id param, if it's a list of occupancies
-        if (this.#locationType != "H") {
-            let selectionElement = this.#contentView.querySelector(".selection-input");//TODO add to class
-            const location_id = selectionElement.value
-            url.searchParams.append("location_id", location_id);
-        }
-
-        //add the time params, if its a time type
-        if (this.#timeType == "T") {
-            const timeElement = this.#contentView.querySelector(".time-input");//TODO add to class
-            const time = timeElement.value;
-            if (!time) {
-                throw new Error("There is no given time.");
-            }
-            url.searchParams.append("time", time);
-        } else if (this.#timeType == "P") {
-            const fromTimeElement = this.#contentView.querySelector(".from-input");//TODO add to class
-            const fromTime = fromTimeElement.value;
-            const toTimeElement = this.#contentView.querySelector(".to-input");
-            const toTime = toTimeElement.value;
-            if (!toTime || !fromTime) {
-                throw new Error("There is no given time for from or to.");
-            }
-            url.searchParams.append("time", fromTime);
-            url.searchParams.append("end_time", toTime);
-        }
-        return url;
+        downloadUserDataRepresentationDataAsCSV(this.#userDataRepresentationId);
     }
 
     // Setters and Getters
