@@ -1,3 +1,7 @@
+import binascii
+from datetime import timedelta
+import os
+
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 from django.utils import timezone
@@ -136,3 +140,16 @@ class UserDataRepresentation(models.Model):
             return self.room_id
         else:
             return None
+
+
+def generate_key():
+    return binascii.hexlify(os.urandom(20)).decode()
+
+
+class Token(models.Model):
+    key = models.CharField(max_length=40, primary_key=True, default=generate_key)
+    user = models.OneToOneField(User, related_name='auth_token', on_delete=models.CASCADE)
+    used = models.DateTimeField(default=timezone.now)
+
+    def is_valid(self):
+        return (timezone.now() - self.used) < timedelta(hours=1)  # TODO dynamic timedelta

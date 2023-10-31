@@ -146,7 +146,7 @@ class DataGeneratorFactory:
             return MultipleLocationsInformationGenerator()
 
     @staticmethod
-    def generate_csv_file_response(data, user_data_representation):
+    def generate_csv_file_response(data, user_data_representation):  # TODO can be delted later!!
         """Creates and returns a HttpResponse with a csv file containing the given data in it."""
 
         data_representation = user_data_representation.data_representation

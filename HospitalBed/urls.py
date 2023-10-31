@@ -18,7 +18,9 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from dashboard.views.edit_user_data_views import ManageUserDataRepresentationView
+from dashboard.views.api_views import TokenView, ManageUserDataRepresentationView, ManageUserDataRepresentationsView, \
+    DataRepresentationsView
+from dashboard.views.edit_user_data_views import ManageUserDataRepresentationView as ManageUserDataRepresentationView2
 from dashboard.views.location_data_views import LocationDataResponseView
 from dashboard.views.main_views import DashboardView, RegistrationView, \
     LoginView, LogoutView
@@ -35,10 +37,18 @@ urlpatterns = [
     path("logout/", LogoutView.as_view()),
 
     # managing of UserDataRepresentation
-    path("update/order", ManageUserDataRepresentationView.as_view()),
-    path("delete/user-data-representation", ManageUserDataRepresentationView.as_view()),
-    path("create/user-data-representation", ManageUserDataRepresentationView.as_view()),
+    path("update/order", ManageUserDataRepresentationView2.as_view()),
+    path("delete/user-data-representation", ManageUserDataRepresentationView2.as_view()),
+    path("create/user-data-representation", ManageUserDataRepresentationView2.as_view()),
 
     # data response for the template
-    path("get_data/", LocationDataResponseView.as_view())
+    path("get_data/", LocationDataResponseView.as_view()),
+
+    path("api/token", TokenView.as_view()),
+    # for the post method (no given id)
+    path("api/user-data-representation", ManageUserDataRepresentationView.as_view()),
+    path("api/user-data-representation/<int:user_data_representation_id>", ManageUserDataRepresentationView.as_view()),
+    path("api/user-data-representations", ManageUserDataRepresentationsView.as_view()),
+
+    path("api/data-representations", DataRepresentationsView.as_view()),
 ]

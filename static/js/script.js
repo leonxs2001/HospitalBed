@@ -1,9 +1,29 @@
 import {
     deleteUserDataRepresentation,
+    deleteUserDataRepresentation2,
     createNewUserDataRepresentation,
+    createNewUserDataRepresentation2,
     updateUserDataRepresentationOrder,
-    downloadUserDataRepresentationDataAsCSV, getUserDataRepresentationData
+    updateUserDataRepresentationOrder2,
+    downloadUserDataRepresentationDataAsCSV,
+    getUserDataRepresentationData,
+    getUserDataRepresentationData2,
+    authenticateUser,
+    getAuthorizationTokenFromSessionStorage,
+    setAuthorizationTokenInSessionStorage,
+    patchUserDataRepresentation,
+    getDataRepresentations,
 } from "./server-communication.js";
+
+/*let token = getAuthorizationTokenFromSessionStorage();
+if (token == null) {
+    authenticateUser("test", "dragonball20", (data) => {
+        let token = data["token"];
+        setAuthorizationTokenInSessionStorage(token);
+    });
+}else{
+    createNewUserDataRepresentation(token, 5);
+}*/
 
 const csrfMiddlewareToken = document.querySelector('[name=csrfmiddlewaretoken]');
 const contentViewTemplate = document.querySelector("#content-view-template");
@@ -86,7 +106,7 @@ class ContentViewManager {
      */
     createNewContentView(locationType, themeType, timeType) {
         let contentView = null;
-        createNewUserDataRepresentation(locationType, themeType, timeType, data => {
+        createNewUserDataRepresentation2(locationType, themeType, timeType, data => {
             // get all the data from the response
             const locations = "locations" in data ? data["locations"] : null;
             const user_data_representation = data["user_data_representation"];
@@ -241,7 +261,7 @@ class ContentViewManager {
             })
         });
 
-        updateUserDataRepresentationOrder(orderIdDictList);
+        updateUserDataRepresentationOrder2(orderIdDictList);
     }
 
     /**
@@ -454,7 +474,7 @@ class ContentView {
             }
         }
 
-        getUserDataRepresentationData(this.#userDataRepresentationId, updateInputs, location_id, time, endTime, data => {
+        getUserDataRepresentationData2(this.#userDataRepresentationId, updateInputs, location_id, time, endTime, data => {
             // reset the locationSelect of the ContentView
             if (this.#locationType != "H") {
                 const locations = data.locations;
@@ -524,7 +544,7 @@ class ContentView {
      */
     onDeletionOfContentView() {
         if (confirm("Sind sie sicher, dass sie diese Datenrepräsentation löschen wollen?")) {
-            deleteUserDataRepresentation(this.userDataRepresentationId, () => {
+            deleteUserDataRepresentation2(this.userDataRepresentationId, () => {
                 // clear the intervall if the ContentView was a neartime ContentView.
                 if (this.#interval) {
                     clearInterval(this.#interval);

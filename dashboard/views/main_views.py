@@ -18,6 +18,7 @@ from dashboard.services import HL7MessageParser
 
 class CustomUserCreationForm(BaseUserCreationForm):
     """UserCreationForm for the new User-model."""
+
     class Meta(UserCreationForm.Meta):
         model = User
 
