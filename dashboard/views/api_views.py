@@ -19,7 +19,6 @@ def token_required(view_func):
 
     def wrapper(request, *args, **kwargs):
         token = request.META.get('HTTP_AUTHORIZATION')
-        print(token)
         try:
             token_obj = Token.objects.get(key=token)
             if token_obj.is_valid():
@@ -29,13 +28,14 @@ def token_required(view_func):
                 request.user = token_obj.user
                 return view_func(request, *args, **kwargs)
             else:
-                return HttpResponseForbidden("The token is not valid anymore.")
+                return HttpResponse("The token is not valid anymore.", status=401)
         except ObjectDoesNotExist:
             return HttpResponseForbidden("The token does not exist.")
 
     return wrapper
 
 
+# TODO think about transmitted name convention
 class TokenView(View):
     def post(self, request):
         data = json.loads(request.body.decode("utf-8"))
@@ -55,10 +55,20 @@ class TokenView(View):
                 token = Token.objects.create(user=user)
 
             return JsonResponse({
-                "token": token.key
+                "token": token.key,
+                username: username
             }, encoder=ModelJSONEncoder)
         else:
             return HttpResponse("Incorrect username or password.", status=401)
+
+    @method_decorator(token_required)
+    def delete(self, request):
+        token = request.user.auth_token
+
+        if token.is_valid():
+            token.delete()
+
+        return HttpResponse(status=200)
 
 
 class ManageUserDataRepresentationView(View):
@@ -166,8 +176,13 @@ class ManageUserDataRepresentationsView(View):
 class DataRepresentationsView(View):
     @method_decorator(token_required)
     def get(self, request):
-        context = {
-            # todo change the structure (result in first place not hidden behind "data_representations"
-            "data_representations": DataRepresentation.objects.all()
-        }
-        return JsonResponse(context, ModelJSONEncoder)
+        context = [
+            {
+                "id": representation.id,
+                "locationType": representation.get_location_type_display(),
+                "themeType": representation.get_theme_type_display(),
+                "timeType": representation.get_time_type_display(),
+            }
+            for representation in DataRepresentation.objects.all()
+        ]
+        return JsonResponse(context, ModelJSONEncoder, safe=False)

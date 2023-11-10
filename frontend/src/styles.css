@@ -1,1 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
+body {
+  height: 100%;
+  background: #58d0f580;
+  margin: 3vh 4vw 4vh 4vw;
+}
+
+img:hover{
+  transform: scale(1.1);
+}

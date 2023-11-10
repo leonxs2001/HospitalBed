@@ -52,7 +52,7 @@
 
 }
 
-.child .selection {
+.selection {
     background: #ffffffea;
     line-height: 30px;
     border-bottom: #CCC 1px solid;
@@ -67,10 +67,6 @@
 }
 
 .selection:hover {
-    background-color: #95B4CA;
-}
-
-.parent .selection:hover {
     background-color: #F0F0F0;
 }
 

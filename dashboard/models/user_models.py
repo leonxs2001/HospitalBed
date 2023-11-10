@@ -16,21 +16,21 @@ class DataRepresentation(models.Model):
     objects = DataRepresentationManager()
 
     class LocationChoices(models.TextChoices):
-        HOSPITAL = "H"
-        WARD = "W"
-        ROOM = "R"
+        HOSPITAL = "H", "Krankenhaus"
+        WARD = "W", "Station"
+        ROOM = "R", "Zimmer"
 
     class ThemeChoices(models.TextChoices):
-        INFORMATION = "I"
-        ALL_BEDS = "B"
-        ALL_ROOMS = "R"
-        ALL_WARDS = "W"
-        HISTORY = "H"
+        INFORMATION = "I", "Informationen"
+        ALL_BEDS = "B", "Informationen der Betten"
+        ALL_ROOMS = "R", "Informationen der Zimmer"
+        ALL_WARDS = "W", "Informationen der Stationen"
+        HISTORY = "H", "Auslastungsverlauf"
 
     class TimeChoices(models.TextChoices):
-        NEARTIME = "N"
-        TIME = "T"
-        PERIOD = "P"
+        NEARTIME = "N", "Neartime"
+        TIME = "T", "Zeitpunkt"
+        PERIOD = "P", "Zeitspanne"
 
     location_type = models.CharField(max_length=1,
                                      choices=LocationChoices.choices,
@@ -152,4 +152,5 @@ class Token(models.Model):
     used = models.DateTimeField(default=timezone.now)
 
     def is_valid(self):
-        return (timezone.now() - self.used) < timedelta(hours=1)  # TODO dynamic timedelta
+        result = (timezone.now() - self.used) < timedelta(hours=1)
+        return result # TODO dynamic timedelta
