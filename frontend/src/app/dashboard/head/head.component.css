@@ -1,0 +1,50 @@
+#user-text {
+    margin: auto 0;
+}
+
+
+#head-div {
+    display: flex;
+    width: 92vw;
+    height: 5vh;
+    justify-content: flex-end;
+}
+
+#user-div {
+    background: #ffffffea;
+    width: 33%;
+    padding: 0 1em;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 520;
+    box-shadow: 0.2vw 0.2vh 0.5em grey;
+}
+
+#user-span {
+    font-weight: bold;
+}
+
+#logout-image {
+    margin: 1vh 0;
+    height: 3vh;
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+    .log-out-image {
+        margin: 1.25vh 0;
+        height: 2.5vh;
+    }
+}
+
+@media only screen and (min-width: 1650px) {
+    #user-div {
+        font-size: 1.1em;
+    }
+}
+
+@media all and (max-width: 1000px) {
+    #user-div {
+        font-size: 0.9em;
+    }
+}

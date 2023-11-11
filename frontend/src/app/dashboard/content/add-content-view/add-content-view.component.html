@@ -1,0 +1,27 @@
+<ul id="add-ul">
+  <li class="parent">
+    <span id="add-span">
+            <span id="add-text-span">Hinzufügen</span>
+            <img id="add-image" src="assets/add.svg">
+    </span>
+    <ul class="child">
+      <li class="parent selection" *ngFor="let location of locations">
+        {{location}}
+        <span class="expand">»</span>
+        <ul class="child">
+          <li class="parent selection" *ngFor="let theme of getThemes(location)">
+            {{theme}}
+            <span class="expand">»</span>
+            <ul class="child">
+              <li class="selection" *ngFor="let timeIds of getTimeIds(location, theme) " (click)="onNewUserDataRepresentationClick(timeIds.id)">
+                {{timeIds.timeType}}
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+

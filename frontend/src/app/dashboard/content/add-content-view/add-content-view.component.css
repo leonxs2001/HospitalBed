@@ -1,0 +1,75 @@
+.child, #add-ul {
+    list-style: none;
+    margin: 0;
+    padding: 0px;
+    min-width: 10em;
+}
+
+#add-ul {
+    height: 4vh;
+    background: #ffffffea;
+    border-radius: 10px;
+    box-shadow: 0.2vw 0.2vh 0.5em grey;
+    width: fit-content;
+    margin-left: 1vw;
+    display: flex;
+    align-content: center;
+    flex-wrap: wrap;
+    padding-left: 0.5em;
+    z-index: 2;
+    position: relative;
+}
+
+#add-image {
+    height: 2.3vh;
+    margin-right: 1vw;
+}
+
+#add-span {
+    display: flex;
+    justify-content: space-between;
+}
+
+#add-text-span {
+    margin: auto 0;
+}
+
+.parent {
+    display: block;
+    position: relative;
+    float: left;
+    width: 100%;
+}
+
+.parent:hover > .child {
+    display: block;
+    position: absolute;
+}
+
+.child {
+    display: none;
+}
+
+.selection {
+    background: #ffffffea;
+    line-height: 30px;
+    border-bottom: #CCC 1px solid;
+    border-right: #CCC 1px solid;
+    width: 150%;
+    padding-left: 0.5em;
+}
+
+#add-ul .child .child {
+    left: 100%;
+    top: 0;
+}
+
+.selection:hover {
+    background-color: #F0F0F0;
+}
+
+.expand {
+    font-size: 12px;
+    float: right;
+    margin-right: 5px;
+}

@@ -1,0 +1,10 @@
+#content-div {
+    margin-top: 3vh;
+    width: 92vw;
+    height: 80vh;
+    padding-top: 1vh;
+    overflow-y: auto;
+    border-radius: 30px;
+    display: flex;
+    flex-wrap: wrap;
+}

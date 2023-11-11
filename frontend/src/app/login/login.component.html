@@ -1,0 +1,6 @@
+<form id="login-form" (submit)="login()">
+  <p id="error" *ngIf="showError">Leider stimmen der eingegebene Nutzername und das Passwort nicht überein.</p>
+  <input type="text" [(ngModel)]="user.username" name="username" placeholder="Benutzername" required>
+  <input type="password" [(ngModel)]="user.password" name="password" placeholder="Passwort" required>
+  <button type="submit">Einloggen</button>
+</form>
