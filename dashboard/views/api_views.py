@@ -56,7 +56,7 @@ class TokenView(View):
 
             return JsonResponse({
                 "token": token.key,
-                username: username
+                "username": username
             }, encoder=ModelJSONEncoder)
         else:
             return HttpResponse("Incorrect username or password.", status=401)
