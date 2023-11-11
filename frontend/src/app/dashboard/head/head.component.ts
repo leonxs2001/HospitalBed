@@ -14,7 +14,7 @@ export class HeadComponent {
     username: ""
   };
 
-  @Output logoutEvent = new EventEmitter<void>();
+  @Output() logoutEvent = new EventEmitter<void>();
 
   logout() {
     this.logoutEvent.emit();
