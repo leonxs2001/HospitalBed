@@ -83,7 +83,7 @@
 /*main part*/
 body {
     height: 100%;
-    background: #58d0f580;
+    background: #62DCBB;
     margin: 3vh 4vw 4vh 4vw;
 }
 
@@ -443,7 +443,18 @@ body {
     }
 
     .room-data-div {
-        margin-top: 25%;
+        margin-top: 10%;
+    }
+
+    .time-input-span {
+        font-size: 1.4em;
+        margin: auto 0;
+    }
+
+    input, select {
+        font-size: 1.2em;
+        margin: 0;
+        padding: 0;
     }
 
     .occupancy-history-chart-canvas {
@@ -459,12 +470,44 @@ body {
         margin: 1.25vh 0;
         height: 2.5vh;
     }
+
+    .content-view-heading {
+        font-size: 2.5em;
+    }
+
+    #head-div, #add-ul {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    .child .selection {
+        width: 100%;
+        padding: 0.7em;
+    }
+
+    .content-view-data-div {
+        font-size: 1.6em;
+    }
+
 }
 
 @media (pointer: coarse) and (orientation: landscape) {
 
     .content-view {
         height: 77vh;
+    }
+
+    .time-input-span {
+        font-size: 1.4em;
+        margin: auto 0;
+    }
+
+    .content-view-heading {
+        font-size: 2.5em;
+    }
+
+    input, select {
+        font-size: 1.2em;
     }
 
     .location-list-div {
@@ -483,6 +526,28 @@ body {
     .occupancy-history-chart-canvas {
         height: 50vh !important;
     }
+
+    #head-div, #add-ul {
+        font-size: 1.6em;
+        height: 6vh;
+    }
+
+    #add-image {
+        height: 6vh;
+    }
+
+    #log-out-image {
+        height: 4vh;
+    }
+
+    .child .selection {
+        width: 100%;
+        padding: 0.3em;
+    }
+    .content-view-data-div {
+        font-size: 1.6em;
+    }
+
 
 }
 

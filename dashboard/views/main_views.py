@@ -1,5 +1,6 @@
 import datetime
 
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, BaseUserCreationForm
@@ -13,11 +14,31 @@ from django.views.generic import TemplateView
 from django.conf import settings
 
 from dashboard.models import User, UserDataRepresentation, Ward, Room, DataRepresentation
+from dashboard.models.hospital_models import Bed
 from dashboard.services import HL7MessageParser
+
+
+def rename(request):
+    wards = Ward.objects.all()
+
+    for i, ward in enumerate(wards):
+
+        ward.name = chr((i % 25) + 65) + str((i // 25) + 1)
+        ward.save()
+
+        rooms = Room.objects.filter(ward=ward)
+        for i2, room in enumerate(rooms):
+            room.name = ward.name + "." + str(i2)
+            room.save()
+            beds = Bed.objects.filter(room=room)
+            for i3, bed in enumerate(beds):
+                bed.name = room.name + chr(i3 + 65)
+                bed.save()
 
 
 class CustomUserCreationForm(BaseUserCreationForm):
     """UserCreationForm for the new User-model."""
+
     class Meta(UserCreationForm.Meta):
         model = User
 
@@ -36,19 +57,24 @@ class RegistrationView(View):
         """Gets the registration data from the form validates it, creates the user and login this new user."""
 
         form = CustomUserCreationForm(request.POST)
+
         if form.is_valid():
             form.save()
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password1')
 
             user = authenticate(request, username=username, password=password)
-
+            UserDataRepresentation.objects.create_user_data_representation(DataRepresentation.objects.get(id=2), user)
             # redirect to the login if the user does not exist
             if user is not None:
                 login(request, user)
                 return redirect('home')
             return redirect("login")
-
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+            return redirect("registration")
 
 class LoginView(View):
     """View for the login of a user."""

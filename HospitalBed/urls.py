@@ -21,7 +21,7 @@ from django.views.generic import TemplateView
 from dashboard.views.edit_user_data_views import ManageUserDataRepresentationView
 from dashboard.views.location_data_views import LocationDataResponseView
 from dashboard.views.main_views import DashboardView, RegistrationView, \
-    LoginView, LogoutView
+    LoginView, LogoutView, rename
 
 urlpatterns = [
     # could be used later: path('admin/', admin.site.urls),
@@ -30,7 +30,7 @@ urlpatterns = [
     path('', DashboardView.as_view(), name="home"),
 
     # authentication
-    path("registration/", RegistrationView.as_view()),
+    path("registration/", RegistrationView.as_view(), name="registration"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view()),
 
@@ -40,5 +40,6 @@ urlpatterns = [
     path("create/user-data-representation", ManageUserDataRepresentationView.as_view()),
 
     # data response for the template
-    path("get_data/", LocationDataResponseView.as_view())
+    path("get_data/", LocationDataResponseView.as_view()),
+    #path("rename/", rename)
 ]

@@ -260,7 +260,6 @@ class LocationInformationQuerySet(TimeQuerySet, ABC):
         Returns the given QuerySet with the locations filtered by a given time
         and the right annotated information.
         """
-
         return self.filter_for_time(time).get_information(time)
 
     def information_for_period(self, start: timezone.datetime, end: timezone.datetime):
@@ -423,19 +422,19 @@ class HospitalBedQuerySet(LocationInformationQuerySet, LocationOccupancyQuerySet
     def get_information(self, time: timezone.datetime):
         query_set = self.sex_annotation(time)
 
-        return query_set.aggregate(
+        result = query_set.aggregate(
             # aggregate the number of the people with the different sexes from the beds
             number_of_diverse=models.Sum("number_of_diverse"),
             number_of_men=models.Sum("number_of_men"),
             number_of_women=models.Sum("number_of_women"),
 
-            # annotate the number of occupied beds by counting the connected stays
-            number=models.Count('stay', distinct=True,
-                                filter=models.Q(stay__start_date__lt=time) & (
-                                        models.Q(stay__end_date=None) | models.Q(stay__end_date__gt=time))),
             # annotate the max number of beds by counting them
             max_number=models.Count("id", distinct=True)
         )
+
+        result["number"] = result["number_of_diverse"] + result["number_of_men"] + result["number_of_women"]
+
+        return result
 
     def get_information_for_period(self, start: datetime, end: datetime):
         # create the subquery for the max number of beds
@@ -447,17 +446,18 @@ class HospitalBedQuerySet(LocationInformationQuerySet, LocationOccupancyQuerySet
 
         query_set = self.sex_over_period_annotation(start, end)
 
-        return query_set.aggregate(
+        result = query_set.aggregate(
             # aggregate the number of the people with the different sexes from the beds
             number_of_diverse=models.Sum("number_of_diverse"),
             number_of_men=models.Sum("number_of_men"),
             number_of_women=models.Sum("number_of_women"),
-
-            # annotate the number of occupied beds by counting the connected stays
-            number=models.Count('stay', distinct=True, filter=stay_period_filter),
             # annotate the max number of beds by counting them
             max_number=models.Count("id", distinct=True)
         )
+
+        result["number"] = result["number_of_diverse"] + result["number_of_men"] + result["number_of_women"]
+
+        return result
 
     def get_occupancy(self, time: timezone.datetime):
         return self.aggregate(

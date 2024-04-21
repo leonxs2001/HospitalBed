@@ -32,8 +32,9 @@ const DATETIME_REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/
  */
 function percentage(value, maxValue) {
     if (value == undefined || maxValue == undefined || maxValue == 0) {
-        return 0;
+        return (0.00).toFixed(2);
     }
+
     return ((value / maxValue) * 100).toFixed(2);
 }
 
@@ -454,7 +455,8 @@ class ContentView {
             }
         }
 
-        getUserDataRepresentationData(this.#userDataRepresentationId, updateInputs, location_id, time, endTime, data => {
+        getUserDataRepresentationData(this.#userDataRepresentationId, updateInputs, time, endTime, location_id, data => {
+            console.log(data);
             // reset the locationSelect of the ContentView
             if (this.#locationType != "H") {
                 const locations = data.locations;
@@ -608,7 +610,7 @@ class RoomInformationContentView extends ContentView {
 
             this.contentViewManager.setRectangleClassAndTextForSex(singleRoomData, sexRectangle, sexSpan);
 
-            ageH4.innerText = (singleRoomData.average_age) ? singleRoomData.average_age : "/";
+            ageH4.innerText = (singleRoomData.average_age) ? singleRoomData.average_age : "-";
             occupancyH4.innerText = percentage(singleRoomData.number, singleRoomData.max_number) + "%";
             freeBedsH4.innerText = `${singleRoomData.max_number - singleRoomData.number} von ${singleRoomData.max_number}`;
 
@@ -833,7 +835,12 @@ class BedsInformationContentView extends ContentView {
             const sexRectangle = newBedDiv.querySelector(".sex-rectangle");
             this.contentViewManager.setRectangleClassAndTextForSex(bedData, sexRectangle, sexSpan);
             nameSpan.innerText = bedData.name;
-            ageSpan.innerText = bedData.average_age;
+            if(bedData.average_age){
+                ageSpan.innerText = bedData.average_age;
+            }else{
+                ageSpan.innerText = "-";
+            }
+
 
             bedListDiv.appendChild(newBedDiv);
         }, this);
@@ -871,19 +878,25 @@ class LocationsInformationContentView extends ContentView {
             const chartCanvas = newLocationDiv.querySelector(".location-occupancy-chart-canvas");
 
             nameSpan.innerText = locationData.name;
-            occupancySpan.innerText = percentage(locationData.number, locationData.max_number) + "%";
 
-            new Chart(chartCanvas, {
+            occupancySpan.innerText = percentage(locationData.number, locationData.max_number) + "%";
+            occupancySpan.innerText = locationData.number + " / " + locationData.max_number;
+
+            let difference = locationData.max_number - locationData.number;
+            if(difference == 0){
+                difference = 1;
+            }
+            let chart = new Chart(chartCanvas, {
                 type: 'bar',
                 data: {
                     labels: [locationData.name],
                     datasets: [{
                         label: "belegt",
-                        data: [locationData.number],
+                        data: [locationData.number, ],
                         backgroundColor: "#f64141"
                     }, {
                         label: "leer",
-                        data: [locationData.max_number - locationData.number],
+                        data: [difference,],
                         backgroundColor: "#41f67c",
                     },]
                 },

@@ -23,7 +23,7 @@ mimetypes.add_type("application/javascript", ".js", True)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # hl7 directory with the hl7 files
-HL7_DIRECTORY = "C:/Users/Leon/OneDrive/Bachelorarbeit/Eigene/Von echt/Leons_hl7"
+HL7_DIRECTORY = "C:/Users/Leon/OneDrive/HospitalBed/BraIN/Leons_hl7"
 
 # initial rfc stuff
 ASHOST = 'sbb243.sbb.dom'
@@ -38,7 +38,7 @@ SECRET_KEY = 'django-insecure-y60%zahb8q%%b*wbzaf9yk&#((r#vpnsa5ykz$d0y+xyt41ut$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["192.168.137.1", "bettminton.com", "127.0.0.1", "localhost", "www.bettminton.com"]
 
 # Application definition
 
@@ -95,7 +95,7 @@ DATABASES = {
         'PASSWORD': 'dragonball20',
         'HOST': 'localhost',
         'PORT': '3306',
-    }
+    },
 }
 
 AUTH_USER_MODEL = "dashboard.User"

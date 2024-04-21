@@ -2,15 +2,134 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrierung</title>
+    <style>
+        .error-div {
+            color: red;
+            margin-left: 3%;
+            margin-right: 3%;
+        }
+
+        .already-registered-p {
+            margin-left: 3%;
+            margin-right: 3%;
+        }
+
+        body {
+            background-color: #62DCBB;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%; /* Änderung: Breite auf 90% für Smartphones */
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        body > div > form > p:nth-child(1) {
+            display: block;
+        }
+
+        form p {
+            display: flex;
+            flex-direction: column;
+            margin-left: 3%;
+            margin-right: 3%;
+        }
+
+        form button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #62DCBB;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        form button:hover {
+            4 background-color: #4dbbaa;
+        }
+
+        a {
+            color: #62DCBB;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media screen and (max-width: 600px) {
+            .container {
+                max-width: 90%;
+                margin: 0 2%;
+            }
+        }
+    </style>
 </head>
 <body>
-<h2>Registrierung</h2>
-<p>Du bist schon registriert? <a href="/login">Zum Login</a></p>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Registrieren</button>
-</form>
+<div class="container">
+    <h2>Registrierung</h2>
+    <p class="already-registered-p">Du bist schon registriert? <a href="/login">Zum Login</a></p>
+    {% if messages %}
+        <div class="error-div">
+            There is an error:
+            <ul class="messages">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Registrieren</button>
+    </form>
+</div>
+<script>
+    const passwordConfirmation = document.querySelector("body > div > form > p:nth-child(7)");
+    const form = document.querySelector("form");
+    const btn = document.querySelector("body > div > form > button");
+    const p = document.createElement("p");
+    const label = document.querySelector("#id_password2");
+    label.textContent = "Repeat Password: "
+    form.insertBefore(p, btn);
+    form.insertBefore(document.querySelector("body > div > form > ul"), btn);
+    p.appendChild(label);
+    p.appendChild(document.querySelector("#id_password2"));
+    document.querySelectorAll(".helptext").forEach(el => {
+        el.parentNode.removeChild(el);
+    });
+    document.querySelector("#id_password2").parentElement.insertBefore(document.querySelector("body > div > form > p:nth-child(5) > label"), document.querySelector("#id_password2"));
+
+    document.querySelectorAll("p").forEach(ps => {
+        if(!ps.innerText){
+            ps.remove();
+        }
+    });
+
+</script>
 </body>
 </html>

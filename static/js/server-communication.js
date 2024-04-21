@@ -31,7 +31,6 @@ export function deleteUserDataRepresentation(userDataRepresentationId, handleSuc
     }).catch(handleErrorFunction);
 }
 
-//TODO angucken, warumd ata
 /**
  * Function for creation a new UserDataRepresentation on server side.
  * @param {string} locationType - A parameter containing the string representation for the location.
@@ -145,7 +144,6 @@ export function downloadUserDataRepresentationDataAsCSV(userDataRepresentationId
 export function getUserDataRepresentationData(userDataRepresentationId, updateInputs, time, endTime, locationId, handleSuccessfulResponseFunction = () => {
 }, handleErrorFunction = (error) => console.log(error)) {
     let url = createDataUrl(userDataRepresentationId, updateInputs, false, locationId, time, endTime);
-
     fetch(url.toString(), {
         method: "GET",
         headers: {
